@@ -50,7 +50,7 @@ public class TutorialTest {
 
     @Test
     public void testProgram() {
-        TestUtils.parseVerbose("2 + 3;\n1+1;");
+        TestUtils.parseVerbose("2 + 3;\n1+1;",STATEMENT);
     }
 
     @Test

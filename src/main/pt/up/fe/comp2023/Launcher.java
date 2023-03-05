@@ -3,9 +3,13 @@ package pt.up.fe.comp2023;
 import java.io.File;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import pt.up.fe.comp.TestUtils;
+import pt.up.fe.comp.jmm.analysis.table.Symbol;
+import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
+import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.parser.JmmParserResult;
 import pt.up.fe.specs.util.SpecsIo;
 import pt.up.fe.specs.util.SpecsLogs;
@@ -37,10 +41,13 @@ public class Launcher {
         // Parse stage
         JmmParserResult parserResult = parser.parse(code, config);
 
+        if(parserResult.getRootNode()!=null)
+            System.out.println(parserResult.getRootNode().toTree());
+
         // Check if there are parsing errors
         TestUtils.noErrors(parserResult.getReports());
 
-        // ... add remaining stages
+        SymbolTable gen = new JmmSymbolTable(parserResult.getRootNode());
     }
 
     private static Map<String, String> parseArgs(String[] args) {
