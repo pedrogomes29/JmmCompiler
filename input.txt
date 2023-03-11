@@ -1,23 +1,26 @@
-import std.io;
-import io2;
-import io3;
+class MethodsAndFields{
+	int field1;
+	boolean field2;
+	MethodsAndFields field3;
 
-class Fac{
+	public int getField1(){
+		return field1;
+	}
 
-    int x;
-    String y;
-    int[] anArray;
-    int foo(int anInt, int[] anArray, boolean aBool) {return a+2*3;}
-    public int computeFac (int num){
-        int num_aux ;
-        int[] num_aux_array ;
-        if ( num < 1)
-            num_aux = 1;
-        else
-            num_aux = num * ( this.computeFac(num - 1));
-        return num_aux ;
-    }
-    public static void main ( String[] args ){
-        io.println (new Fac().computeFac(10));
-    }
+	public boolean getField2(){
+		return field2;
+	}
+
+	public MethodsAndFields getField3(){
+		return field3;
+	}
+
+	public int[] all(int a, boolean b, MethodsAndFields maf){
+		int[] c;
+		return c;
+	}
+
+	public static void main(String[] args){
+
+	}
 }

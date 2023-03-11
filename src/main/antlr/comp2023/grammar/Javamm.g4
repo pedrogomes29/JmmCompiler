@@ -14,7 +14,7 @@ program
     ;
 
 importDeclaration :
-    'import' (path=ID'.')* className=ID ';'
+    'import' ((path+= ID)'.')* className=ID ';'
     ;
 
 classDeclaration :
@@ -25,26 +25,26 @@ classDeclaration :
 
 
 varDeclaration :
-    varType=type varName=ID ';'
+        type varName=ID ';'
     ;
 
 
 methodDeclaration :
-    ('public')? returnType=type functionName=ID '(' ( argumentType=type argumentVar=ID ( ',' otherArgumentType=type otherArgumentVar=ID )* )? ')' '{'
+    ('public')? type functionName=ID '(' ( type arguments+=ID ( ',' type arguments+=ID )* )? ')' '{'
         (varDeclaration)* ( statement )* 'return' expression ';'
     '}' #normalMethod
-    | ('public')? 'static' 'void' functionName='main' '(' 'String' '[' ']' argsName=ID ')' '{'
+    | ('public')? 'static' 'void' functionName='main' '(' 'String' '[' ']' argument=ID ')' '{'
         (varDeclaration)* ( statement )*
     '}' #staticMethod
     ;
 
 
-type
-    : value='int' array='['']'
+type locals[boolean isArray=false]
+    : value='int' ('['']'{$isArray=true;})?
     | value='boolean'
     | value='int'
     | value='String'
-    | className = ID
+    | value = ID
     ;
 
 statement
