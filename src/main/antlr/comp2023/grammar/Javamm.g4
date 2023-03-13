@@ -49,11 +49,11 @@ type locals[boolean isArray=false]
 
 statement
     : '{' ( statement )* '}' #BlockOfStatements
-    | 'if' '(' condition=expression ')' thenDo=statement 'else' elseDo=statement #IfStatement
-    | 'while' '(' condition=expression ')' repeat=statement #WhileStatement
+    | 'if' '(' expression ')' thenDo=statement 'else' elseDo=statement #IfStatement
+    | 'while' '(' expression ')' repeat=statement #WhileStatement
     | expression ';' #ExpressionStatement
     | var = ID '=' expression ';' #Assignment
-    | array = ID '[' expression ']' '=' expression ';' #ArrayASsignment
+    | array = ID '[' expression ']' '=' expression ';' #ArrayAssignment
     ;
 
 
