@@ -47,7 +47,7 @@ public class Launcher {
         // Check if there are parsing errors
         TestUtils.noErrors(parserResult.getReports());
 
-        SymbolTable gen = new JmmSymbolTable(parserResult.getRootNode());
+        //SymbolTable gen = new JmmSymbolTable(parserResult.getRootNode());
     }
 
     private static Map<String, String> parseArgs(String[] args) {

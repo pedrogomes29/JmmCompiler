@@ -58,18 +58,17 @@ statement
 
 
 expression
-    :
-    op='!' expression #Negation
+    : '(' expression ')' #Grouping
+    | expression '[' expression ']' #ArrayAccess
+    | expression '.' 'length' #Length
+    | expression '.' methodName=ID '(' ( expression ( ',' expression )* )? ')' #MethodCall
+    | op='!' expression #Negation
     | expression op=('*' | '/') expression #BinaryOp
     | expression op=('+' | '-') expression #BinaryOp
     | expression op='<' expression #BinaryOp
     | expression op='&&' expression #BinaryOp
-    | expression '[' expression ']' #ArrayAccess
-    | expression '.' 'length' #Length
-    | expression '.' methodName=ID '(' ( expression ( ',' expression )* )? ')' #MethodCall
     | 'new' 'int' '[' expression ']' #ArrayConstructor
     | 'new' className=ID '(' ')' #Constructor
-    | '(' expression ')' #Grouping
     | value=INTEGER #Integer
     | value='true' #True
     | value='false' #False
