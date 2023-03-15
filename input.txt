@@ -15,10 +15,14 @@ class MethodsAndFields{
 		return field3;
 	}
 
+    //ola
+
 	public int[] all(int a, boolean b, MethodsAndFields maf){
 		int[] c;
 		return c;
 	}
+
+    /*ola*/
 
 	public static void main(String[] args){
 

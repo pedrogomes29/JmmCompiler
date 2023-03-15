@@ -6,7 +6,8 @@ grammar Javamm;
 
 INTEGER : [0-9]+ ;
 ID : [a-zA-Z_][a-zA-Z_0-9]* ;
-
+COMMENT_LINE: '//' ~[\r\n]* -> skip;
+COMMENT_BLOCK: '/*' .*? '*/' -> skip;
 WS : [ \t\n\r\f]+ -> skip ;
 
 program
@@ -49,8 +50,8 @@ type locals[boolean isArray=false]
 
 statement
     : '{' ( statement )* '}' #BlockOfStatements
-    | 'if' '(' expression ')' thenDo=statement 'else' elseDo=statement #IfStatement
-    | 'while' '(' expression ')' repeat=statement #WhileStatement
+    | 'if' '(' expression ')' statement 'else' statement #IfStatement
+    | 'while' '(' expression ')' statement #WhileStatement
     | expression ';' #ExpressionStatement
     | var = ID '=' expression ';' #Assignment
     | array = ID '[' expression ']' '=' expression ';' #ArrayAssignment
@@ -61,7 +62,7 @@ expression
     : '(' expression ')' #Grouping
     | expression '[' expression ']' #ArrayAccess
     | expression '.' 'length' #Length
-    | expression '.' methodName=ID '(' ( expression ( ',' expression )* )? ')' #MethodCall
+    | expression '.' methodName=ID '(' ( expression ( ',' expression )* )? ')' #ClassMethodCall
     | op='!' expression #Negation
     | expression op=('*' | '/') expression #BinaryOp
     | expression op=('+' | '-') expression #BinaryOp
