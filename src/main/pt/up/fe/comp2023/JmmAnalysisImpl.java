@@ -12,7 +12,6 @@ public class JmmAnalysisImpl implements JmmAnalysis {
 
         JmmNode rootNode = jmmParserResult.getRootNode();
         SymbolTable symbolTable = new JmmSymbolTable(rootNode);
-        JmmSemanticsResult sematicsResult  = new JmmSemanticsResult(jmmParserResult, symbolTable, jmmParserResult.getReports());
-        return sematicsResult;
+        return new JmmSemanticsResult(jmmParserResult, symbolTable, jmmParserResult.getReports());
     }
 }
