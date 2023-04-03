@@ -11,6 +11,7 @@ import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
 import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.parser.JmmParserResult;
+import pt.up.fe.comp2023.Analysis.JmmSymbolTable;
 import pt.up.fe.specs.util.SpecsIo;
 import pt.up.fe.specs.util.SpecsLogs;
 import pt.up.fe.specs.util.SpecsSystem;
@@ -47,7 +48,9 @@ public class Launcher {
         // Check if there are parsing errors
         TestUtils.noErrors(parserResult.getReports());
 
-        //SymbolTable gen = new JmmSymbolTable(parserResult.getRootNode());
+        SymbolTable gen = new JmmSymbolTable(parserResult.getRootNode());
+
+        System.out.println(gen.print());
     }
 
     private static Map<String, String> parseArgs(String[] args) {

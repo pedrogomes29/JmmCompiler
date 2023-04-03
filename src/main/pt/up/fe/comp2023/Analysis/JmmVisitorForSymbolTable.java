@@ -47,7 +47,7 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         if(jmmNode.hasAttribute("classParentName"))
             symbolTable.setSuper(jmmNode.get("classParentName"));
         else
-            symbolTable.setSuper("No super");
+            symbolTable.setSuper(null);
 
         for ( JmmNode child : jmmNode.getChildren()){
             visit(child,"");
