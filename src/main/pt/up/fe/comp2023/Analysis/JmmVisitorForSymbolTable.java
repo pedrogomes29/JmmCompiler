@@ -1,4 +1,4 @@
-package pt.up.fe.comp2023;
+package pt.up.fe.comp2023.Analysis;
 
 import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.analysis.table.Type;
@@ -6,14 +6,13 @@ import pt.up.fe.comp.jmm.ast.AJmmVisitor;
 import pt.up.fe.comp.jmm.ast.JmmNode;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
-public class JmmVisitor extends AJmmVisitor< String , String >{
+public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
 
     private JmmSymbolTable symbolTable;
 
-    public JmmVisitor(JmmSymbolTable symbolTable){
+    public JmmVisitorForSymbolTable(JmmSymbolTable symbolTable){
         buildVisitor();
         this.symbolTable = symbolTable;
     }

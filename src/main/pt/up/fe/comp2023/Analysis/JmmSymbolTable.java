@@ -1,9 +1,8 @@
-package pt.up.fe.comp2023;
+package pt.up.fe.comp2023.Analysis;
 
 import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
 import pt.up.fe.comp.jmm.analysis.table.Type;
-import pt.up.fe.comp.jmm.ast.AJmmVisitor;
 import pt.up.fe.comp.jmm.ast.JmmNode;
 
 import java.util.ArrayList;
@@ -27,7 +26,7 @@ public class JmmSymbolTable implements SymbolTable{
         methodToReturnType = new HashMap<>();
         methodToParamaters = new HashMap<>();
         methodToLocalVars = new HashMap<>();
-        JmmVisitor gen = new JmmVisitor(this);
+        JmmVisitorForSymbolTable gen = new JmmVisitorForSymbolTable(this);
         gen.visit(node);
         System.out.println(this.print());
     }
