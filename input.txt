@@ -1,30 +1,13 @@
-class MethodsAndFields{
-	int field1;
-	boolean field2;
-	MethodsAndFields field3;
-
-	public int getField1(){
-		return field1;
+class Fac {
+    int x;
+	public int compFac(int num){
+ 		int num_aux;
+        num_aux=1;
+        num= 4+5*3/6;
+  	    return num_aux;
 	}
-
-	public boolean getField2(){
-		return field2;
-	}
-
-	public MethodsAndFields getField3(){
-		return field3;
-	}
-
-    //ola
-
-	public int[] all(int a, boolean b, MethodsAndFields maf){
-		int[] c;
-		return c;
-	}
-
-    /*ola*/
 
 	public static void main(String[] args){
-
+ 		io.println(new Fac().compFac(10));
 	}
 }

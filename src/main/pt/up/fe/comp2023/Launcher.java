@@ -3,15 +3,14 @@ package pt.up.fe.comp2023;
 import java.io.File;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import pt.up.fe.comp.TestUtils;
-import pt.up.fe.comp.jmm.analysis.table.Symbol;
-import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
-import pt.up.fe.comp.jmm.analysis.table.Type;
+import pt.up.fe.comp.jmm.analysis.JmmSemanticsResult;
+import pt.up.fe.comp.jmm.ollir.OllirResult;
 import pt.up.fe.comp.jmm.parser.JmmParserResult;
-import pt.up.fe.comp2023.Analysis.JmmSymbolTable;
+import pt.up.fe.comp2023.analysis.JmmAnalysisImpl;
+import pt.up.fe.comp2023.ollir.JmmOptimizationImpl;
 import pt.up.fe.specs.util.SpecsIo;
 import pt.up.fe.specs.util.SpecsLogs;
 import pt.up.fe.specs.util.SpecsSystem;
@@ -48,9 +47,12 @@ public class Launcher {
         // Check if there are parsing errors
         TestUtils.noErrors(parserResult.getReports());
 
-        SymbolTable gen = new JmmSymbolTable(parserResult.getRootNode());
 
-        System.out.println(gen.print());
+        JmmAnalysisImpl jmmAnalysisImpl = new JmmAnalysisImpl();
+        JmmSemanticsResult jmmSemanticsResult = jmmAnalysisImpl.semanticAnalysis(parserResult);
+        JmmOptimizationImpl jmmOptimizationImpl = new JmmOptimizationImpl();
+        OllirResult ollirResult = jmmOptimizationImpl.toOllir(jmmSemanticsResult);
+        System.out.println(parserResult.toString());
     }
 
     private static Map<String, String> parseArgs(String[] args) {

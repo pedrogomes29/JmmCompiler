@@ -1,4 +1,4 @@
-package pt.up.fe.comp2023.Analysis;
+package pt.up.fe.comp2023.symbolTable;
 
 import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
@@ -18,6 +18,10 @@ public class JmmSymbolTable implements SymbolTable{
     private HashMap<String,Type> methodToReturnType;
     private HashMap<String,List<Symbol>> methodToParamaters;
     private HashMap<String,List<Symbol>> methodToLocalVars;
+    private HashMap<String,Boolean> methodIsStatic;
+    private HashMap<String,String> methodToOllirCode;
+
+    private Integer lastUsedVariable;
 
     public JmmSymbolTable(JmmNode node){
         imports= new ArrayList<>();
@@ -26,6 +30,9 @@ public class JmmSymbolTable implements SymbolTable{
         methodToReturnType = new HashMap<>();
         methodToParamaters = new HashMap<>();
         methodToLocalVars = new HashMap<>();
+        methodIsStatic = new HashMap<>();
+        methodToOllirCode = new HashMap<>();
+        lastUsedVariable = -1;
         JmmVisitorForSymbolTable gen = new JmmVisitorForSymbolTable(this);
         gen.visit(node);
         System.out.println(this.print());
@@ -110,7 +117,26 @@ public class JmmSymbolTable implements SymbolTable{
     }
 
     public void addLocalVariables(String method, Symbol localVariable) {
-    this.methodToLocalVars.get(method).add(localVariable);
+        this.methodToLocalVars.get(method).add(localVariable);
     }
 
+    public void setIsStatic(String method,Boolean isStatic){
+        this.methodIsStatic.put(method,isStatic);
+    }
+
+    public Boolean methodIsStatic(String method){
+        return this.methodIsStatic.get(method);
+    }
+
+    public void setMethodOllirCode(String method,String ollirCode){
+        this.methodToOllirCode.put(method,ollirCode);
+    }
+
+    public String getMethodOllirCode(String method){
+        return this.methodToOllirCode.get(method);
+    }
+
+    public String getNewVariable(){
+        return String.format("t%s",++lastUsedVariable);
+    }
 }

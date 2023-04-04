@@ -53,7 +53,7 @@ statement
     | 'if' '(' expression ')' statement 'else' statement #IfStatement
     | 'while' '(' expression ')' statement #WhileStatement
     | expression ';' #ExpressionStatement
-    | var = ID '=' expression ';' #Assignment
+    | varName = ID '=' expression ';' #Assignment
     | array = ID '[' expression ']' '=' expression ';' #ArrayAssignment
     ;
 
