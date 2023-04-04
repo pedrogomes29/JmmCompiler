@@ -1,13 +1,18 @@
-class Fac {
-    int x;
-	public int compFac(int num){
- 		int num_aux;
-        num_aux=1;
-        num= 4+5*3/6;
-  	    return num_aux;
-	}
+class CompileArithmetic {
 
-	public static void main(String[] args){
- 		io.println(new Fac().compFac(10));
-	}
+    public static void main(String[] args) {
+
+    }
+
+    public int foo() {
+        int a;
+        int b;
+        int c;
+
+        a = 1;
+        b = 2;
+
+        c = a+b;
+        return c;
+    }
 }

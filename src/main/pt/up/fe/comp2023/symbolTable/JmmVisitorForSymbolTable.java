@@ -97,8 +97,12 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
             String childCode = visit(child,"");
             if(index==jmmNode.getNumChildren()-1) {
                 String returnType = JmmOptimizationImpl.typeToOllir(symbolTable.getReturnType(functionName));
-                methodCode.append("\t\tret.").append(returnType)
+                if(isLiteralOrID(child))
+                    methodCode.append("\t\tret.").append(returnType)
                         .append(" ").append(childCode).append(";\n");
+                else
+                    methodCode.append(childCode).append("\t\t").append("ret").append(".").append(returnType).append(" ").
+                            append(child.get("var")).append(";\n");
             }
             else
                 methodCode.append(childCode);
@@ -162,7 +166,14 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
     }
 
     private String dealWithIdentifier(JmmNode jmmNode,String s){
-        return dealWithId(jmmNode,jmmNode.get("value"));
+        String varName = jmmNode.get("value");
+        String idCode = dealWithId(jmmNode,varName);
+
+        String[] splitedList = idCode.split("\\.");
+        String varType = splitedList[splitedList.length-1];
+
+        jmmNode.put("var",varName+"."+varType);
+        return idCode;
     }
     private String dealWithId(JmmNode jmmNode,String varName){
         Optional<JmmNode> methodNode = jmmNode.getAncestor("NormalMethod");

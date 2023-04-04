@@ -39,7 +39,7 @@ public class JmmOptimizationImpl implements JmmOptimization {
     private String fieldsToOllir(List<Symbol> fields){
         StringBuilder fieldsCodeBuilder = new StringBuilder();
         for(Symbol field:fields){
-            String accessModifierAndFieldName = String.format(".field %s %s","private",field.getName());
+            String accessModifierAndFieldName = String.format("\t.field %s %s","private",field.getName());
             String fieldType = String.format(".%s;\n",typeToOllir(field.getType()));
             fieldsCodeBuilder.append(accessModifierAndFieldName).append(fieldType);
         }
@@ -67,21 +67,41 @@ public class JmmOptimizationImpl implements JmmOptimization {
         return methodsCodeBuilder.toString();
     }
 
+    private String importsToOllir(List<String> imports){
+        StringBuilder importsCodeBuilder = new StringBuilder();
+        for(String an_import:imports){
+            importsCodeBuilder.append("import ").append(an_import).append(";\n");
+        }
+        return importsCodeBuilder.toString();
+    }
+
+    private String superToOllir(String superName){
+        if(superName==null)
+            return "";
+        else
+            return " extends " + superName;
+    }
+
+
     @Override
     public OllirResult toOllir(JmmSemanticsResult jmmSemanticsResult) {
-        SymbolTable symbolTable = jmmSemanticsResult.getSymbolTable();
+        JmmSymbolTable symbolTable = (JmmSymbolTable) jmmSemanticsResult.getSymbolTable();
+        String imports = importsToOllir(symbolTable.getImports());
         String fields = fieldsToOllir(symbolTable.getFields());
-        String methods = methodsToOllir((JmmSymbolTable) symbolTable);
+        String methods = methodsToOllir(symbolTable);
+        String superName = superToOllir(symbolTable.getSuper());
         String ollirCode = String.format("""
-                %s{
-                    %s
+                %s
+                %s%s{
+                
+                %s
                     .construct %s().V {
                         invokespecial(this, "<init>").V;
                     }
                     
                     %s
                 }
-                """,symbolTable.getClassName(), fields,symbolTable.getClassName(),methods);
+                """,imports,symbolTable.getClassName(),superName, fields,symbolTable.getClassName(),methods);
 
         System.out.println(ollirCode);
         return new OllirResult(ollirCode,jmmSemanticsResult.getConfig());
