@@ -1,4 +1,6 @@
 import x.y.z;
+import a.b.c;
+import d;
 
 class CompileArithmetic {
 

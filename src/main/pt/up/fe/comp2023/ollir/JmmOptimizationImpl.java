@@ -68,8 +68,9 @@ public class JmmOptimizationImpl implements JmmOptimization {
     }
 
     private String importsToOllir(JmmSymbolTable symbolTable){
-        StringBuilder importsCodeBuilder = new StringBuilder("import ");
+        StringBuilder importsCodeBuilder = new StringBuilder("");
         for(String an_import:symbolTable.getImports()){
+            importsCodeBuilder.append("import ");
             List<String> package_ = symbolTable.getImportPackage(an_import);
             if(package_.size()>0){
                 String package_path = (String)package_.stream().map((dir) -> {
