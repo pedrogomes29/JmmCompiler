@@ -21,10 +21,12 @@ public class JmmSymbolTable implements SymbolTable{
     private HashMap<String,Boolean> methodIsStatic;
     private HashMap<String,String> methodToOllirCode;
 
+    private HashMap<String,List<String>> importToPackage;
+
     private Integer lastUsedVariable;
 
     public JmmSymbolTable(JmmNode node){
-        imports= new ArrayList<>();
+        imports = new ArrayList<>();
         fields = new ArrayList<>();
         methods = new ArrayList<>();;
         methodToReturnType = new HashMap<>();
@@ -32,6 +34,7 @@ public class JmmSymbolTable implements SymbolTable{
         methodToLocalVars = new HashMap<>();
         methodIsStatic = new HashMap<>();
         methodToOllirCode = new HashMap<>();
+        importToPackage = new HashMap<>();
         lastUsedVariable = -1;
         JmmVisitorForSymbolTable gen = new JmmVisitorForSymbolTable(this);
         gen.visit(node);
@@ -138,5 +141,13 @@ public class JmmSymbolTable implements SymbolTable{
 
     public String getNewVariable(){
         return String.format("t%s",++lastUsedVariable);
+    }
+
+    public void setImportPackage(String import_,List<String> package_){
+        this.importToPackage.put(import_,package_);
+    }
+
+    public List<String> getImportPackage(String import_){
+        return this.importToPackage.get(import_);
     }
 }

@@ -49,6 +49,7 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
     }
     private String dealWithImport (JmmNode jmmNode , String s) {
         symbolTable.addImport(jmmNode.get("className"));
+        symbolTable.setImportPackage(jmmNode.get("className"),(List<String>) jmmNode.getObject("path"));
         return "";
     }
 

@@ -67,10 +67,17 @@ public class JmmOptimizationImpl implements JmmOptimization {
         return methodsCodeBuilder.toString();
     }
 
-    private String importsToOllir(List<String> imports){
-        StringBuilder importsCodeBuilder = new StringBuilder();
-        for(String an_import:imports){
-            importsCodeBuilder.append("import ").append(an_import).append(";\n");
+    private String importsToOllir(JmmSymbolTable symbolTable){
+        StringBuilder importsCodeBuilder = new StringBuilder("import ");
+        for(String an_import:symbolTable.getImports()){
+            List<String> package_ = symbolTable.getImportPackage(an_import);
+            if(package_.size()>0){
+                String package_path = (String)package_.stream().map((dir) -> {
+                    return dir;
+                }).collect(Collectors.joining("."));
+                importsCodeBuilder.append(package_path).append(".");
+            }
+            importsCodeBuilder.append(an_import).append(";\n");
         }
         return importsCodeBuilder.toString();
     }
@@ -86,7 +93,7 @@ public class JmmOptimizationImpl implements JmmOptimization {
     @Override
     public OllirResult toOllir(JmmSemanticsResult jmmSemanticsResult) {
         JmmSymbolTable symbolTable = (JmmSymbolTable) jmmSemanticsResult.getSymbolTable();
-        String imports = importsToOllir(symbolTable.getImports());
+        String imports = importsToOllir(symbolTable);
         String fields = fieldsToOllir(symbolTable.getFields());
         String methods = methodsToOllir(symbolTable);
         String superName = superToOllir(symbolTable.getSuper());
