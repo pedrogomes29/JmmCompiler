@@ -5,8 +5,7 @@ import org.specs.comp.ollir.*;
 import java.beans.Statement;
 import java.util.List;
 
-import static org.specs.comp.ollir.ElementType.BOOLEAN;
-import static org.specs.comp.ollir.ElementType.INT32;
+import static org.specs.comp.ollir.ElementType.*;
 import static org.specs.comp.ollir.OperationType.*;
 
 public class OllirVisitorForJasmin {
@@ -67,15 +66,15 @@ public class OllirVisitorForJasmin {
             result.append(")").append(method.getReturnType()).append("\n");
 
 
-            // Visit method body
+
             result.append(".limit stack 99\n").append(".limit locals 99\n");
 
             for (Instruction instruction : method.getInstructions()) {
                 if (instruction instanceof AssignInstruction) {
                     result.append(visitAssignmentStatement((AssignInstruction) instruction));
-                } /*else if (instruction instanceof BinaryOpInstruction) {
+                } else if (instruction instanceof BinaryOpInstruction) {
                     result.append(visitBinaryOpInstruction((BinaryOpInstruction) instruction));
-                } else if (instruction instanceof CallInstruction) {
+                } /*else if (instruction instanceof CallInstruction) {
                     result.append(visitCallInstruction((CallInstruction) instruction));
                 }*/
             }
@@ -95,6 +94,8 @@ public class OllirVisitorForJasmin {
             result.append("istore");
         } else if (assign.getTypeOfAssign().equals(BOOLEAN)) {
             result.append("istore");
+        } else if (assign.getTypeOfAssign().equals(CLASS)) {
+            result.append("astore");
         }
 
         result.append(" ").append(destOperand.getName()).append("\n");
@@ -102,6 +103,25 @@ public class OllirVisitorForJasmin {
         return result;
     }
 
-
+    public StringBuilder visitBinaryOpInstruction(BinaryOpInstruction operation){
+        StringBuilder result = new StringBuilder();
+        Operand leftOperand = (Operand) operation.getLeftOperand();
+        Operand rightOperand = (Operand) operation.getRightOperand();
+        OperationType opType = operation.getOperation().getOpType();
+        if (opType.equals(ADD)){
+            result.append("iadd");
+            result.append("\n");
+        } else if (opType.equals(SUB)) {
+            result.append("isub");
+            result.append("\n");
+        } else if (opType.equals(MUL)) {
+            result.append("imul");
+            result.append("\n");
+        } else if (opType.equals(DIV)) {
+            result.append("idiv");
+            result.append("\n");
+        }
+        return result;
+    }
 
 }
