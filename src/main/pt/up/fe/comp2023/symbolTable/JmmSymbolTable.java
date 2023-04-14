@@ -140,8 +140,10 @@ public class JmmSymbolTable implements SymbolTable{
     }
 
     public String getNewVariable(){
-        return String.format("t%s",++lastUsedVariable);
+       return String.format("t%s",++lastUsedVariable);
     }
+
+    public void decreaseVariable(){lastUsedVariable--;}
 
     public void setImportPackage(String import_,List<String> package_){
         this.importToPackage.put(import_,package_);
