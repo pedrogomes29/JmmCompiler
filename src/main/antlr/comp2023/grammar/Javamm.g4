@@ -62,7 +62,7 @@ expression
     : '(' expression ')' #Grouping
     | expression '[' expression ']' #ArrayAccess
     | expression '.' 'length' #Length
-    | expression '.' methodName=ID '(' ( expression ( ',' expression )* )? ')' #ClassMethodCall
+    | expression '.' methodName=ID '(' ( expression ( ',' expression )* )? ')' #MethodCall
     | op='!' expression #Negation
     | expression op=('*' | '/') expression #BinaryOp
     | expression op=('+' | '-') expression #BinaryOp
@@ -71,8 +71,8 @@ expression
     | 'new' 'int' '[' expression ']' #ArrayConstructor
     | 'new' className=ID '(' ')' #Constructor
     | value=INTEGER #Integer
-    | value='true' #True
-    | value='false' #False
+    | value='true' #Boolean
+    | value='false' #Boolean
     | value=ID #Identifier
     | value='this' #This
     ;

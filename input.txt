@@ -1,22 +1,27 @@
-import x.y.z;
-import a.b.c;
-import d;
+import utils;
 
-class CompileArithmetic {
+class myClass {
 
-    public static void main(String[] args) {
+	myClass a;
 
-    }
+	public int get(){
+ 		return a;
+	}
 
-    public int foo() {
-        int a;
-        int b;
-        int c;
+    public int put(int n){
+ 		a = n;
+ 		return a;
+	}
 
-        a = 1;
-        b = 2;
+	public int m1(){
+	    int x;
+        x = this.get().get();
+ 		return x;
+	}
 
-        c = a+b;
-        return c;
-    }
+	public static void main(String[] args){
+		myClass A;
+		A = new myClass();
+ 		A.m1();
+	}
 }
