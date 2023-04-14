@@ -2,13 +2,15 @@ package pt.up.fe.comp2023;
 
 import org.specs.comp.ollir.*;
 
+import javax.print.DocFlavor;
 import java.beans.Statement;
+import java.lang.reflect.Array;
 import java.util.List;
 
 import static org.specs.comp.ollir.ElementType.*;
 import static org.specs.comp.ollir.OperationType.*;
 
-public class OllirVisitorForJasmin {
+public class OllirVisitorForJasmin{
 
     public String visit(ClassUnit classUnit) {
         StringBuilder result = new StringBuilder();
@@ -22,7 +24,12 @@ public class OllirVisitorForJasmin {
     public StringBuilder visitClassHeader(ClassUnit classUnit) {
         StringBuilder result = new StringBuilder();
         result.append(".class public ").append(classUnit.getClassName()).append("\n");
-        result.append(".super java/lang/Object");
+        result.append(".super ");
+        if (classUnit.getSuperClass() == null){
+            result.append("java/lang/Object\n\n");
+        } else {
+            result.append(classUnit.getSuperClass()).append("\n\n");
+        }
         return result;
     }
 
@@ -31,12 +38,25 @@ public class OllirVisitorForJasmin {
         for (Field field : classUnit.getFields()) {
             result.append(visitField(field)).append("\n");
         }
+        result.append("\n");
         return result;
     }
 
     public StringBuilder visitField(Field field) {
         StringBuilder result = new StringBuilder();
-        result.append(".field").append(field.getFieldAccessModifier()).append(" ").append(field.getFieldName()).append(" ").append(field.getFieldType()).append("\n");
+        result.append(".field ");
+        if (field.getFieldAccessModifier().name().equals("DEFAULT")){
+            result.append("private");
+        }else{
+            result.append(field.getFieldAccessModifier().toString().toLowerCase()).append(" ");
+        }
+        result.append(field.getFieldName());
+        if (field.getFieldType().getTypeOfElement().name().equals("INT32")) {
+            result.append(" I");
+        }   else if (field.getFieldType().getTypeOfElement().name().equals("BOOLEAN")){
+            result.append(" Z");
+        }
+
         return result;
     }
 
@@ -53,52 +73,72 @@ public class OllirVisitorForJasmin {
         if (method.isConstructMethod()) {
             result.append(".method public <init>()V\n");
             result.append("    aload_0\n");
-            result.append("    invokespecial java/lang/Object/<init>()V\n");
+            result.append("    invokespecial ");
+            if (method.getOllirClass().getSuperClass() != null){
+                result.append(method.getOllirClass().getSuperClass()).append("/<init>()V\n");
+            } else {
+                result.append("java/lang/Object/<init>()V\n");
+            }
             result.append("    return\n");
             result.append(".end method\n");
-        } else {
-            result.append(".method").append(method.getMethodAccessModifier()).append(" ").append(method.getMethodName()).append("(");
+        }  else {
+            result.append(".method").append(" ").append(method.getMethodAccessModifier().toString().toLowerCase()).append(" ");
+            if (method.isStaticMethod()){
+                result.append("static ");
+            }
+            result.append(method.getMethodName()).append("(");
 
             for (Element arg : method.getParams()) {
-                result.append(arg.getType());
+                if (arg.getType().getTypeOfElement().name().equals("INT32")) {
+                    result.append("I");
+                } else if (arg.getType().getTypeOfElement().name().equals("BOOLEAN")){
+                    result.append("Z");
+                } else if (arg.getType().getTypeOfElement().name().equals("ARRAYREF")){
+                    result.append("[Ljava/lang/String;");
+                }
             }
 
-            result.append(")").append(method.getReturnType()).append("\n");
+            result.append(")");
+            if (method.getReturnType().getTypeOfElement().name().equals("BOOLEAN")) {
+                result.append("Z").append("\n");
+            } else if (method.getReturnType().getTypeOfElement().name().equals("INT32")) {
+                result.append("I").append("\n");
+            } else if (method.getReturnType().getTypeOfElement().name().equals("VOID")) {
+                result.append("V").append("\n");
+            }
 
 
-
-            result.append(".limit stack 99\n").append(".limit locals 99\n");
+            result.append("    .limit stack 99\n").append("    .limit locals 99\n");
 
             for (Instruction instruction : method.getInstructions()) {
                 if (instruction instanceof AssignInstruction) {
                     result.append(visitAssignmentStatement((AssignInstruction) instruction));
                 } else if (instruction instanceof BinaryOpInstruction) {
                     result.append(visitBinaryOpInstruction((BinaryOpInstruction) instruction));
-                } /*else if (instruction instanceof CallInstruction) {
+                } else if (instruction instanceof CallInstruction) {
                     result.append(visitCallInstruction((CallInstruction) instruction));
-                }*/
+                }
             }
+            if (method.getReturnType().getTypeOfElement().equals(VOID)){
+                result.append("\treturn\n");
+            } else {
+                result.append("\tireturn\n");
+            }
+            result.append(".end method\n");
         }
-
-        result.append(".end method\n");
 
         return result;
     }
 
     public StringBuilder visitAssignmentStatement(AssignInstruction assign) {
         StringBuilder result = new StringBuilder();
+
         Operand destOperand = (Operand) assign.getDest();
-        result.append("    ");
-
-        if (assign.getTypeOfAssign().equals(INT32)) {
-            result.append("istore");
-        } else if (assign.getTypeOfAssign().equals(BOOLEAN)) {
-            result.append("istore");
-        } else if (assign.getTypeOfAssign().equals(CLASS)) {
-            result.append("astore");
+        if (destOperand.isParameter()) {
+            result.append("\taload_").append(destOperand.getParamId()).append("\n");
+        } else {
+            result.append("\tistore_").append(destOperand.getParamId()).append("\n");
         }
-
-        result.append(" ").append(destOperand.getName()).append("\n");
 
         return result;
     }
@@ -124,4 +164,36 @@ public class OllirVisitorForJasmin {
         return result;
     }
 
+    public StringBuilder visitCallInstruction(CallInstruction callInstruction){
+        StringBuilder result = new StringBuilder();
+        Operand firstArg = (Operand) callInstruction.getFirstArg();
+        ClassType classType = (ClassType) firstArg.getType();
+        result.append("\t").append(callInstruction.getInvocationType()).append(" ").append(classType.getName());
+        if (callInstruction.getSecondArg() != null) {
+            result.append("/").append(((LiteralElement) callInstruction.getSecondArg()).getLiteral().toString().replaceAll("\"",""));
+        }
+        result.append("(");
+
+        for (Element e : callInstruction.getListOfOperands()) {
+            if (e.getType().getTypeOfElement().equals(VOID)){
+                result.append("V");
+            } else if (e.getType().getTypeOfElement().equals(INT32)){
+                result.append("I");
+            } else if (e.getType().getTypeOfElement().equals(BOOLEAN)){
+                result.append("Z");
+            }
+        }
+
+        result.append(")");
+        if (callInstruction.getReturnType().getTypeOfElement().equals(VOID)){
+            result.append("V");
+        } else if (callInstruction.getReturnType().getTypeOfElement().equals(INT32)){
+            result.append("I");
+        } else if (callInstruction.getReturnType().getTypeOfElement().equals(BOOLEAN)){
+            result.append("Z");
+        }
+        result.append("\n");
+
+        return result;
+    }
 }

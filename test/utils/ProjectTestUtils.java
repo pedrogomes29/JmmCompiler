@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.sql.SQLOutput;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -330,6 +331,7 @@ public class ProjectTestUtils {
     }
 
     public static void runJasmin(JasminResult jasminResult, String expected) {
+        System.out.println(jasminResult.getJasminCode());
         var output = SpecsStrings.normalizeFileContents(jasminResult.run(), true);
 
         // No expected output, just run test
