@@ -145,6 +145,7 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
 
         }
         else {
+            jmmNode.put("import","false"); //result of method call can never be a static reference to a class
             boolean isImported = false;
             String[] splitedList = objectWithMethod.get("var").split("\\.");
             String className = splitedList[splitedList.length - 1];
