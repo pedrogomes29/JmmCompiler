@@ -115,12 +115,10 @@ public class OllirVisitorForJasmin{
             for (Instruction instruction : method.getInstructions()) {
                 if (instruction instanceof AssignInstruction) {
                     result.append(visitAssignmentStatement((AssignInstruction) instruction, localVariableIndices));
-                } else if (instruction instanceof BinaryOpInstruction) {
-                    result.append(visitBinaryOpInstruction((BinaryOpInstruction) instruction));
                 } else if (instruction instanceof CallInstruction) {
                     result.append(visitCallInstruction((CallInstruction) instruction));
                 } else if (instruction instanceof ReturnInstruction){
-                    result.append(visitReturnStatement((ReturnInstruction) instruction));
+                    result.append(visitReturnStatement((ReturnInstruction) instruction, localVariableIndices));
                 }
             }
             if (method.getReturnType().getTypeOfElement().equals(VOID)){
@@ -137,21 +135,11 @@ public class OllirVisitorForJasmin{
     public StringBuilder visitAssignmentStatement(AssignInstruction assign, HashMap<String,Integer> localVariableIndices) {
         StringBuilder result = new StringBuilder();
         Instruction rhs = assign.getRhs();
-        if (rhs instanceof SingleOpInstruction) {
+        if (rhs instanceof SingleOpInstruction && ((LiteralElement) (Element) ((SingleOpInstruction) rhs).getSingleOperand()).isLiteral()) {
             Integer value = Integer.parseInt(((LiteralElement) (Element) ((SingleOpInstruction) rhs).getSingleOperand()).getLiteral());
-            if (value == 0) {
-                result.append("\ticonst_0\n");
-            } else if (value == 1) {
-                result.append("\ticonst_1\n");
-            } else if (value == -1) {
-                result.append("\ticonst_m1\n");
-            } else if (value >= -128 && value <= 127) {
-                result.append("\tbipush ").append(value).append("\n");
-            } else if (value >= -32768 && value <= 32767) {
-                result.append("\tsipush ").append(value).append("\n");
-            } else {
-                result.append("\tldc ").append(value).append("\n");
-            }
+            result.append("\ticonst_").append(value).append("\n");
+        } else if (rhs instanceof BinaryOpInstruction){
+            result.append(visitBinaryOpInstruction((BinaryOpInstruction) rhs, localVariableIndices));
         }
 
         Operand destOperand = (Operand) assign.getDest();
@@ -174,22 +162,51 @@ public class OllirVisitorForJasmin{
     }
 
 
-    public StringBuilder visitBinaryOpInstruction(BinaryOpInstruction operation){
+    public StringBuilder visitBinaryOpInstruction(BinaryOpInstruction operation, HashMap<String,Integer> localVariableIndices){
         StringBuilder result = new StringBuilder();
         Operand leftOperand = (Operand) operation.getLeftOperand();
         Operand rightOperand = (Operand) operation.getRightOperand();
+        if (leftOperand.isParameter()){
+            result.append("\tiload_").append(leftOperand.getParamId()).append("\n");
+        }else {
+            String localVariableName = leftOperand.getName();
+            int localVariableIdx;
+            if (!localVariableIndices.containsKey(localVariableName)){
+                localVariableIdx = localVariableIndices.size() + 1;
+                localVariableIndices.put(localVariableName, localVariableIdx);
+                result.append("\tiload_").append(localVariableIdx).append("\n");
+            } else {
+                localVariableIdx = localVariableIndices.get(localVariableName);
+                result.append("\tiload_").append(localVariableIdx).append("\n");
+            }
+        }
+        if (rightOperand.isParameter()){
+            result.append("\tiload_").append(rightOperand.getParamId()).append("\n");
+        } else {
+            String localVariableName = rightOperand.getName();
+            int localVariableIdx;
+            if (!localVariableIndices.containsKey(localVariableName)){
+                localVariableIdx = localVariableIndices.size() + 1;
+                localVariableIndices.put(localVariableName, localVariableIdx);
+                result.append("\tiload_").append(localVariableIdx).append("\n");
+            } else {
+                localVariableIdx = localVariableIndices.get(localVariableName);
+                result.append("\tiload_").append(localVariableIdx).append("\n");
+            }
+        }
+
         OperationType opType = operation.getOperation().getOpType();
         if (opType.equals(ADD)){
-            result.append("iadd");
+            result.append("\tiadd");
             result.append("\n");
         } else if (opType.equals(SUB)) {
-            result.append("isub");
+            result.append("\tisub");
             result.append("\n");
         } else if (opType.equals(MUL)) {
-            result.append("imul");
+            result.append("\timul");
             result.append("\n");
         } else if (opType.equals(DIV)) {
-            result.append("idiv");
+            result.append("\tidiv");
             result.append("\n");
         }
         return result;
@@ -228,26 +245,25 @@ public class OllirVisitorForJasmin{
         return result;
     }
 
-    public StringBuilder visitReturnStatement(ReturnInstruction returnIntruction){
+    public StringBuilder visitReturnStatement(ReturnInstruction returnIntruction,HashMap<String,Integer> localVariableIndices){
         StringBuilder result = new StringBuilder();
         if (returnIntruction.getOperand() == null) return result;
         if (returnIntruction.getOperand().isLiteral()){
             Integer value = Integer.parseInt(((LiteralElement) returnIntruction.getOperand()).getLiteral());
-            if (value == 0) {
-                result.append("\ticonst_0\n");
-            } else if (value == 1) {
-                result.append("\ticonst_1\n");
-            } else if (value == -1) {
-                result.append("\ticonst_m1\n");
-            } else if (value >= -128 && value <= 127) {
-                result.append("\tbipush ").append(value).append("\n");
-            } else if (value >= -32768 && value <= 32767) {
-                result.append("\tsipush ").append(value).append("\n");
-            } else {
-                result.append("\tldc ").append(value).append("\n");
-            }
+            result.append("\ticonst_").append(value).append("\n");
         } else if (((Operand)returnIntruction.getOperand()).isParameter()) {
             result.append("\tiload_").append(((Operand)returnIntruction.getOperand()).getParamId()).append("\n");
+        } else {
+            String localVariableName = ((Operand)returnIntruction.getOperand()).getName();
+            int localVariableIdx;
+            if (!localVariableIndices.containsKey(localVariableName)){
+                localVariableIdx = localVariableIndices.size() + 1;
+                localVariableIndices.put(localVariableName, localVariableIdx);
+                result.append("\tiload_").append(localVariableIdx).append("\n");
+            } else {
+                localVariableIdx = localVariableIndices.get(localVariableName);
+                result.append("\tiload_").append(localVariableIdx).append("\n");
+            }
         }
         return result;
     }
