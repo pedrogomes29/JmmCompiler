@@ -89,7 +89,7 @@ public class OllirVisitorForJasmin{
                 result.append("static ");
             }
             result.append(method.getMethodName()).append("(");
-
+            HashMap<String,Integer> localVariableIndices = new HashMap<String,Integer>();
             for (Element arg : method.getParams()) {
                 if (arg.getType().getTypeOfElement().name().equals("INT32")) {
                     result.append("I");
@@ -98,6 +98,7 @@ public class OllirVisitorForJasmin{
                 } else if (arg.getType().getTypeOfElement().name().equals("ARRAYREF")){
                     result.append("[Ljava/lang/String;");
                 }
+                localVariableIndices.put(((Operand) arg).getName(),localVariableIndices.size() + 1);
             }
 
             result.append(")");
@@ -111,7 +112,7 @@ public class OllirVisitorForJasmin{
 
 
             result.append("    .limit stack 99\n").append("    .limit locals 99\n");
-            HashMap<String,Integer> localVariableIndices = new HashMap<String,Integer>();
+
             for (Instruction instruction : method.getInstructions()) {
                 if (instruction instanceof AssignInstruction) {
                     result.append(visitAssignmentStatement((AssignInstruction) instruction, localVariableIndices));
@@ -143,8 +144,8 @@ public class OllirVisitorForJasmin{
         }
 
         Operand destOperand = (Operand) assign.getDest();
-        if (destOperand.isParameter()) {
-            result.append("\tiload_").append(destOperand.getParamId()).append("\n");
+        if (localVariableIndices.containsKey(destOperand.getName())) {
+            result.append("\tiload_").append(localVariableIndices.get(destOperand.getName())).append("\n");
         } else {
             String localVariableName = destOperand.getName();
             int localVariableIdx;
@@ -251,8 +252,6 @@ public class OllirVisitorForJasmin{
         if (returnIntruction.getOperand().isLiteral()){
             Integer value = Integer.parseInt(((LiteralElement) returnIntruction.getOperand()).getLiteral());
             result.append("\ticonst_").append(value).append("\n");
-        } else if (((Operand)returnIntruction.getOperand()).isParameter()) {
-            result.append("\tiload_").append(((Operand)returnIntruction.getOperand()).getParamId()).append("\n");
         } else {
             String localVariableName = ((Operand)returnIntruction.getOperand()).getName();
             int localVariableIdx;
