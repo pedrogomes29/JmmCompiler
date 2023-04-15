@@ -1,10 +1,12 @@
 package pt.up.fe.comp2023;
 
+import jas.LocalVarTableAttr;
 import org.specs.comp.ollir.*;
 
 import javax.print.DocFlavor;
 import java.beans.Statement;
 import java.lang.reflect.Array;
+import java.util.HashMap;
 import java.util.List;
 
 import static org.specs.comp.ollir.ElementType.*;
@@ -109,14 +111,16 @@ public class OllirVisitorForJasmin{
 
 
             result.append("    .limit stack 99\n").append("    .limit locals 99\n");
-
+            HashMap<String,Integer> localVariableIndices = new HashMap<String,Integer>();
             for (Instruction instruction : method.getInstructions()) {
                 if (instruction instanceof AssignInstruction) {
-                    result.append(visitAssignmentStatement((AssignInstruction) instruction));
+                    result.append(visitAssignmentStatement((AssignInstruction) instruction, localVariableIndices));
                 } else if (instruction instanceof BinaryOpInstruction) {
                     result.append(visitBinaryOpInstruction((BinaryOpInstruction) instruction));
                 } else if (instruction instanceof CallInstruction) {
                     result.append(visitCallInstruction((CallInstruction) instruction));
+                } else if (instruction instanceof ReturnInstruction){
+                    result.append(visitReturnStatement((ReturnInstruction) instruction));
                 }
             }
             if (method.getReturnType().getTypeOfElement().equals(VOID)){
@@ -130,18 +134,45 @@ public class OllirVisitorForJasmin{
         return result;
     }
 
-    public StringBuilder visitAssignmentStatement(AssignInstruction assign) {
+    public StringBuilder visitAssignmentStatement(AssignInstruction assign, HashMap<String,Integer> localVariableIndices) {
         StringBuilder result = new StringBuilder();
+        Instruction rhs = assign.getRhs();
+        if (rhs instanceof SingleOpInstruction) {
+            Integer value = Integer.parseInt(((LiteralElement) (Element) ((SingleOpInstruction) rhs).getSingleOperand()).getLiteral());
+            if (value == 0) {
+                result.append("\ticonst_0\n");
+            } else if (value == 1) {
+                result.append("\ticonst_1\n");
+            } else if (value == -1) {
+                result.append("\ticonst_m1\n");
+            } else if (value >= -128 && value <= 127) {
+                result.append("\tbipush ").append(value).append("\n");
+            } else if (value >= -32768 && value <= 32767) {
+                result.append("\tsipush ").append(value).append("\n");
+            } else {
+                result.append("\tldc ").append(value).append("\n");
+            }
+        }
 
         Operand destOperand = (Operand) assign.getDest();
         if (destOperand.isParameter()) {
-            result.append("\taload_").append(destOperand.getParamId()).append("\n");
+            result.append("\tiload_").append(destOperand.getParamId()).append("\n");
         } else {
-            result.append("\tistore_").append(destOperand.getParamId()).append("\n");
+            String localVariableName = destOperand.getName();
+            int localVariableIdx;
+            if (!localVariableIndices.containsKey(localVariableName)){
+                localVariableIdx = localVariableIndices.size() + 1;
+                localVariableIndices.put(localVariableName, localVariableIdx);
+                result.append("\tistore_").append(localVariableIdx).append("\n");
+            } else {
+                localVariableIdx = localVariableIndices.get(localVariableName);
+                result.append("\tistore_").append(localVariableIdx).append("\n");
+            }
         }
 
         return result;
     }
+
 
     public StringBuilder visitBinaryOpInstruction(BinaryOpInstruction operation){
         StringBuilder result = new StringBuilder();
@@ -194,6 +225,30 @@ public class OllirVisitorForJasmin{
         }
         result.append("\n");
 
+        return result;
+    }
+
+    public StringBuilder visitReturnStatement(ReturnInstruction returnIntruction){
+        StringBuilder result = new StringBuilder();
+        if (returnIntruction.getOperand() == null) return result;
+        if (returnIntruction.getOperand().isLiteral()){
+            Integer value = Integer.parseInt(((LiteralElement) returnIntruction.getOperand()).getLiteral());
+            if (value == 0) {
+                result.append("\ticonst_0\n");
+            } else if (value == 1) {
+                result.append("\ticonst_1\n");
+            } else if (value == -1) {
+                result.append("\ticonst_m1\n");
+            } else if (value >= -128 && value <= 127) {
+                result.append("\tbipush ").append(value).append("\n");
+            } else if (value >= -32768 && value <= 32767) {
+                result.append("\tsipush ").append(value).append("\n");
+            } else {
+                result.append("\tldc ").append(value).append("\n");
+            }
+        } else if (((Operand)returnIntruction.getOperand()).isParameter()) {
+            result.append("\tiload_").append(((Operand)returnIntruction.getOperand()).getParamId()).append("\n");
+        }
         return result;
     }
 }
