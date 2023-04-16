@@ -7,7 +7,7 @@ Test {
 	}
 
 	.method public static main(args.array.String).V {
-		test.Test :=.Test new(Test).Test;	
+		test.Test :=.Test new(Test).Test;
 		invokespecial(test.Test,"<init>").V;
 
 		ret.V;
