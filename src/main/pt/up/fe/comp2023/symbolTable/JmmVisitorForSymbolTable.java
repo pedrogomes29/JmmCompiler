@@ -173,9 +173,10 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
             else{
                 isStatic = symbolTable.methodIsStatic(methodName);
                 returnType = JmmOptimizationImpl.typeToOllir(symbolTable.getReturnType(methodName));
-                jmmNode.put("type",returnType);
             }
         }
+        jmmNode.put("type",returnType);
+
 
         for(JmmNode argument:children.subList(1,children.size())) {
             String argumentCode = visit(argument);
