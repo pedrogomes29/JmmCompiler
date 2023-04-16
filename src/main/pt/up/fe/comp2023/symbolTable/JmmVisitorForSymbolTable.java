@@ -38,8 +38,19 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         addVisit("Negation",this::dealWithNegation);
         addVisit("Boolean",this::dealWithBoolean);
         addVisit("ExpressionStatement",this::dealWithExpressionStatement);
+        addVisit("IfStatement",this::dealWithIfStatement);
         addVisit("This",this::dealWithThis);
+        addVisit("ArrayConstructor",this::dealWithArrayConstructor);
         setDefaultVisit(this::dealWithDefaultVisit);
+    }
+
+    private String dealWithIfStatement(JmmNode jmmNode, String s) {
+        String condition = visit(jmmNode.getJmmChild(0),"");
+        String ifCode = visit(jmmNode.getJmmChild(1),"");
+        String elseCode = "";
+        if(jmmNode.getNumChildren()==3)
+            elseCode = visit(jmmNode.getJmmChild(2),"");
+        return "\t\tif " + condition + " {\n" + ifCode + "\t\t}\n" + elseCode;
     }
 
     private Boolean isLiteralOrFunctionVariable(JmmNode jmmNode){
@@ -162,9 +173,10 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
             else{
                 isStatic = symbolTable.methodIsStatic(methodName);
                 returnType = JmmOptimizationImpl.typeToOllir(symbolTable.getReturnType(methodName));
-                jmmNode.put("type",returnType);
             }
         }
+        jmmNode.put("type",returnType);
+
 
         for(JmmNode argument:children.subList(1,children.size())) {
             String argumentCode = visit(argument);
@@ -270,15 +282,27 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
             return jmmNode.get("value");
     }
 
-    private String dealWithIdentifier(JmmNode jmmNode,String s){
+    private String dealWithIdentifier(JmmNode jmmNode, String s) {
         String varName = jmmNode.get("value");
-        String idCode = dealWithId(jmmNode,varName);
+        String idCode = dealWithId(jmmNode, varName);
 
         String[] splitedList = idCode.split("\\.");
-        String varType = splitedList[splitedList.length-1];
+        boolean isArray = false;
+        for (int i = 0; i < splitedList.length-1; i++) {
+            if (splitedList[i].equals("array")) {
+                isArray = true;
+                break;
+            }
+        }
 
+        jmmNode.put("isArray", isArray ? "true" : "false"); // Set the isArray attribute based on the result of the check
+        String varType = splitedList[splitedList.length-1];
         if(Objects.equals(jmmNode.get("field"), "false") && Objects.equals(jmmNode.get("import"), "false"))
             jmmNode.put("var",varName+"."+varType);
+        else
+            jmmNode.put("var",varName);
+        jmmNode.put("type",varType);
+        jmmNode.put("previousCode",idCode);
         return idCode;
     }
     private String dealWithId(JmmNode jmmNode,String varName) {
@@ -497,6 +521,8 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
 
     private String dealWithInteger (JmmNode jmmNode, String s){
         jmmNode.put("var",jmmNode.get("value")+".i32");
+        jmmNode.put("type","int");
+        jmmNode.put("isArray","false");
         return jmmNode.get("value")+".i32";
     }
 
@@ -512,6 +538,8 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         return int_conversion_of_bool+".i32";
         */
         jmmNode.put("var",jmmNode.get("value")+".bool");
+        jmmNode.put("type","bool");
+        jmmNode.put("isArray","false");
         return jmmNode.get("value")+".bool";
     }
 
@@ -537,6 +565,18 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
     }
     private  String dealWithDefaultVisit (JmmNode jmmNode, String s){
         return "";
+    }
+
+    private String dealWithArrayConstructor(JmmNode jmmNode, String s) {
+        String temp_var = symbolTable.getNewVariable();
+        String type = "int[]";
+        JmmNode sizeNode = jmmNode.getChildren().get(0);
+        String sizeCode = sizeNode.get("value");
+        jmmNode.put("var", temp_var + "." + type);
+        jmmNode.put("type", type);
+        jmmNode.put("previousCode", "");
+        jmmNode.put("rhsCode", "newarray(" + sizeCode + ")." + type);
+        return "\t" + temp_var + "." + type + " := newarray(" + sizeCode + ")." + type + ";\n";
     }
 
 }

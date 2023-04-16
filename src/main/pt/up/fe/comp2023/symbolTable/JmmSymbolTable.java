@@ -152,4 +152,33 @@ public class JmmSymbolTable implements SymbolTable{
     public List<String> getImportPackage(String import_){
         return this.importToPackage.get(import_);
     }
+
+    public boolean containsIdentifier(String identifier){
+        for(Symbol field : fields){
+            if(field.getName().equals(identifier)){
+                return true;
+            }
+        }
+        for(String method : methods){
+            for(Symbol parameter : methodToParamaters.get(method)){
+                if(parameter.getName().equals(identifier)){
+                    return true;
+                }
+            }
+            for(Symbol localVar : methodToLocalVars.get(method)){
+                if(localVar.getName().equals(identifier)){
+                    return true;
+                }
+            }
+        }
+        for(String import_ : imports){
+            if(import_.equals(identifier)){
+                return true;
+            }
+        }
+        return false;
+    }
+    public void addError(String error){
+        System.out.println(error);
+    }
 }
