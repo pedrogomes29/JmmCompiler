@@ -38,9 +38,19 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         addVisit("Negation",this::dealWithNegation);
         addVisit("Boolean",this::dealWithBoolean);
         addVisit("ExpressionStatement",this::dealWithExpressionStatement);
+        addVisit("IfStatement",this::dealWithIfStatement);
         addVisit("This",this::dealWithThis);
         addVisit("ArrayConstructor",this::dealWithArrayConstructor);
         setDefaultVisit(this::dealWithDefaultVisit);
+    }
+
+    private String dealWithIfStatement(JmmNode jmmNode, String s) {
+        String condition = visit(jmmNode.getJmmChild(0),"");
+        String ifCode = visit(jmmNode.getJmmChild(1),"");
+        String elseCode = "";
+        if(jmmNode.getNumChildren()==3)
+            elseCode = visit(jmmNode.getJmmChild(2),"");
+        return "\t\tif " + condition + " {\n" + ifCode + "\t\t}\n" + elseCode;
     }
 
     private Boolean isLiteralOrFunctionVariable(JmmNode jmmNode){

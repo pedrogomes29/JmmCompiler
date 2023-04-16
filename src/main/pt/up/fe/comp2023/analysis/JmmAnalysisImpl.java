@@ -23,6 +23,7 @@ public class JmmAnalysisImpl implements JmmAnalysis {
         List<Report> reports = new ArrayList<>();
         verifyIdentifiers(rootNode, symbolTable, reports);
         verifyTypes(rootNode, reports);
+        verifyExpressionsInConditions(rootNode, reports);
         return new JmmSemanticsResult(jmmParserResult, symbolTable, reports);
     }
     private void verifyIdentifiers(JmmNode node, JmmSymbolTable symbolTable, List<Report> reports) {
@@ -55,6 +56,19 @@ public class JmmAnalysisImpl implements JmmAnalysis {
             verifyTypes(child, reports);
         }
     }
+    private void verifyExpressionsInConditions(JmmNode node, List<Report> reports) {
+        if (Objects.equals(node.getKind(), "IfStatement") || Objects.equals(node.getKind(), "WhileStatement")) {
+            JmmNode condition = node.getChildren().get(0);
+            String conditionType = condition.get("type");
+            if (!conditionType.equals("boolean")) {
+                Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Condition must be of type boolean");
+                reports.add(report);
+            }
+        }
+        for (JmmNode child : node.getChildren()) {
+            verifyExpressionsInConditions(child, reports);
+        }
+    }
 
     private boolean areTypesCompatible(String leftType, String rightType, String isLeftArray, String isRightArray, String op) {
         boolean b = leftType.equals("int") && rightType.equals("int") || leftType.equals("i32") && rightType.equals("i32");
@@ -72,4 +86,4 @@ public class JmmAnalysisImpl implements JmmAnalysis {
         }
         return false;
     }
-    }
+}
