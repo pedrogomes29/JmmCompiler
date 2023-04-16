@@ -9,7 +9,9 @@ import java.lang.reflect.Array;
 import java.util.HashMap;
 import java.util.List;
 
+import static org.specs.comp.ollir.CallType.NEW;
 import static org.specs.comp.ollir.ElementType.*;
+import static org.specs.comp.ollir.InstructionType.ASSIGN;
 import static org.specs.comp.ollir.OperationType.*;
 
 public class OllirVisitorForJasmin{
@@ -136,15 +138,18 @@ public class OllirVisitorForJasmin{
     public StringBuilder visitAssignmentStatement(AssignInstruction assign, HashMap<String,Integer> localVariableIndices) {
         StringBuilder result = new StringBuilder();
         Instruction rhs = assign.getRhs();
-        if (rhs instanceof SingleOpInstruction && ((LiteralElement) (Element) ((SingleOpInstruction) rhs).getSingleOperand()).isLiteral()) {
-            Integer value = Integer.parseInt(((LiteralElement) (Element) ((SingleOpInstruction) rhs).getSingleOperand()).getLiteral());
-            result.append("\ticonst_").append(value).append("\n");
+        if (rhs instanceof SingleOpInstruction && ((SingleOpInstruction) rhs).getSingleOperand().isLiteral()) {
+            Integer value = Integer.parseInt(((LiteralElement) ((SingleOpInstruction) rhs).getSingleOperand()).getLiteral());
+            jasmincodeForIntegerVariable(result, value);
         } else if (rhs instanceof BinaryOpInstruction){
             result.append(visitBinaryOpInstruction((BinaryOpInstruction) rhs, localVariableIndices));
+        } else if (rhs instanceof CallInstruction){
+            result.append(visitCallInstruction((CallInstruction) rhs));
         }
 
         Operand destOperand = (Operand) assign.getDest();
-        if (localVariableIndices.containsKey(destOperand.getName())) {
+        InstructionType t =  assign.getInstType();
+        if (localVariableIndices.containsKey(destOperand.getName()) && !assign.getInstType().equals(ASSIGN)) {
             result.append("\tiload_").append(localVariableIndices.get(destOperand.getName())).append("\n");
         } else {
             String localVariableName = destOperand.getName();
@@ -167,34 +172,8 @@ public class OllirVisitorForJasmin{
         StringBuilder result = new StringBuilder();
         Operand leftOperand = (Operand) operation.getLeftOperand();
         Operand rightOperand = (Operand) operation.getRightOperand();
-        if (leftOperand.isParameter()){
-            result.append("\tiload_").append(leftOperand.getParamId()).append("\n");
-        }else {
-            String localVariableName = leftOperand.getName();
-            int localVariableIdx;
-            if (!localVariableIndices.containsKey(localVariableName)){
-                localVariableIdx = localVariableIndices.size() + 1;
-                localVariableIndices.put(localVariableName, localVariableIdx);
-                result.append("\tiload_").append(localVariableIdx).append("\n");
-            } else {
-                localVariableIdx = localVariableIndices.get(localVariableName);
-                result.append("\tiload_").append(localVariableIdx).append("\n");
-            }
-        }
-        if (rightOperand.isParameter()){
-            result.append("\tiload_").append(rightOperand.getParamId()).append("\n");
-        } else {
-            String localVariableName = rightOperand.getName();
-            int localVariableIdx;
-            if (!localVariableIndices.containsKey(localVariableName)){
-                localVariableIdx = localVariableIndices.size() + 1;
-                localVariableIndices.put(localVariableName, localVariableIdx);
-                result.append("\tiload_").append(localVariableIdx).append("\n");
-            } else {
-                localVariableIdx = localVariableIndices.get(localVariableName);
-                result.append("\tiload_").append(localVariableIdx).append("\n");
-            }
-        }
+        result.append(visitOperand(leftOperand, localVariableIndices));
+        result.append(visitOperand(rightOperand, localVariableIndices));
 
         OperationType opType = operation.getOperation().getOpType();
         if (opType.equals(ADD)){
@@ -217,7 +196,7 @@ public class OllirVisitorForJasmin{
         StringBuilder result = new StringBuilder();
         Operand firstArg = (Operand) callInstruction.getFirstArg();
         ClassType classType = (ClassType) firstArg.getType();
-        result.append("\t").append(callInstruction.getInvocationType()).append(" ").append(classType.getName());
+        result.append("\t").append(callInstruction.getInvocationType().toString().toLowerCase()).append(" ").append(classType.getName());
         if (callInstruction.getSecondArg() != null) {
             result.append("/").append(((LiteralElement) callInstruction.getSecondArg()).getLiteral().toString().replaceAll("\"",""));
         }
@@ -251,9 +230,39 @@ public class OllirVisitorForJasmin{
         if (returnIntruction.getOperand() == null) return result;
         if (returnIntruction.getOperand().isLiteral()){
             Integer value = Integer.parseInt(((LiteralElement) returnIntruction.getOperand()).getLiteral());
-            result.append("\ticonst_").append(value).append("\n");
+            jasmincodeForIntegerVariable(result, value);
         } else {
             String localVariableName = ((Operand)returnIntruction.getOperand()).getName();
+            int localVariableIdx;
+            if (!localVariableIndices.containsKey(localVariableName)){
+                localVariableIdx = localVariableIndices.size() + 1;
+                localVariableIndices.put(localVariableName, localVariableIdx);
+                result.append("\tiload_").append(localVariableIdx).append("\n");
+            } else {
+                localVariableIdx = localVariableIndices.get(localVariableName);
+                result.append("\tiload_").append(localVariableIdx).append("\n");
+            }
+        }
+        return result;
+    }
+
+    private void jasmincodeForIntegerVariable(StringBuilder result, Integer value) {
+        if (value >= -1 && value <= 5 )
+            result.append("\ticonst_").append(value).append("\n");
+        else if (value >= -128 && value <= 127)
+            result.append("\tbipush ").append(value).append("\n");
+        else if (value >= -32768 && value <= 32767)
+            result.append("\tsipush ").append(value).append("\n");
+        else
+            result.append("\tldc ").append(value).append("\n");
+    }
+
+    public StringBuilder visitOperand(Operand operand, HashMap<String,Integer> localVariableIndices){
+        StringBuilder result = new StringBuilder();
+        if (operand.isParameter()){
+            result.append("\tiload_").append(operand.getParamId()).append("\n");
+        }else {
+            String localVariableName = operand.getName();
             int localVariableIdx;
             if (!localVariableIndices.containsKey(localVariableName)){
                 localVariableIdx = localVariableIndices.size() + 1;
