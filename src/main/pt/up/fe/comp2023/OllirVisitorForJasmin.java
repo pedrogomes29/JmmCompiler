@@ -80,14 +80,14 @@ public class OllirVisitorForJasmin{
         StringBuilder result = new StringBuilder();
         if (method.isConstructMethod()) {
             result.append(".method public <init>()V\n");
-            result.append("    aload_0\n");
-            result.append("    invokespecial ");
+            result.append("\taload_0\n");
+            result.append("\tinvokespecial ");
             if (method.getOllirClass().getSuperClass() != null){
                 result.append(method.getOllirClass().getSuperClass()).append("/<init>()V\n");
             } else {
                 result.append("java/lang/Object/<init>()V\n");
             }
-            result.append("    return\n");
+            result.append("\treturn\n");
             result.append(".end method\n");
         }  else {
             result.append(".method").append(" ").append(method.getMethodAccessModifier().toString().toLowerCase()).append(" ");
@@ -119,7 +119,7 @@ public class OllirVisitorForJasmin{
             }
 
 
-            result.append("    .limit stack 99\n").append("    .limit locals 99\n");
+            result.append("\t.limit stack 99\n").append("\t.limit locals 99\n");
 
             for (Instruction instruction : method.getInstructions()) {
                 if (instruction instanceof AssignInstruction) {
