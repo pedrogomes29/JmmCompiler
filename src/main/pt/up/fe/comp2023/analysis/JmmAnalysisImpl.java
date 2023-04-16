@@ -75,7 +75,13 @@ public class JmmAnalysisImpl implements JmmAnalysis {
             JmmNode child = node.getChildren().get(0);
             String childType = child.get("type");
             String assignmentType = node.get("type");
-            if (!childType.equals(assignmentType) && (assignmentType.equals("i32") || assignmentType.equals("int") || assignmentType.equals("bool") || assignmentType.equals("int[]"))){
+            if (childType.equals("i32")) {
+                childType = "int";
+            }
+            if (assignmentType.equals("i32")) {
+                assignmentType = "int";
+            }
+            if (!childType.equals(assignmentType) && (assignmentType.equals("int") || assignmentType.equals("bool") || assignmentType.equals("int[]"))){
                 Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Incompatible types " + childType + " and " + assignmentType + " for assignment");
                 reports.add(report);
             }
