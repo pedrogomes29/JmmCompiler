@@ -22,9 +22,10 @@ public class JmmAnalysisImpl implements JmmAnalysis {
         // Type verification
         List<Report> reports = new ArrayList<>();
         verifyIdentifiers(rootNode, symbolTable, reports);
-        verifyAssignments(rootNode, reports);
+        verifyAssignments(rootNode, symbolTable, reports);
         verifyTypes(rootNode, reports);
         verifyExpressionsInConditions(rootNode, reports);
+        verifyArrayAccess(rootNode, reports);
         return new JmmSemanticsResult(jmmParserResult, symbolTable, reports);
     }
     private void verifyIdentifiers(JmmNode node, JmmSymbolTable symbolTable, List<Report> reports) {
@@ -70,7 +71,7 @@ public class JmmAnalysisImpl implements JmmAnalysis {
             verifyExpressionsInConditions(child, reports);
         }
     }
-    private void verifyAssignments(JmmNode node, List<Report> reports) {
+    private void verifyAssignments(JmmNode node, JmmSymbolTable symbolTable, List<Report> reports) {
         if (Objects.equals(node.getKind(), "Assignment")) {
             JmmNode child = node.getChildren().get(0);
             String childType = child.get("type");
@@ -81,13 +82,31 @@ public class JmmAnalysisImpl implements JmmAnalysis {
             if (assignmentType.equals("i32")) {
                 assignmentType = "int";
             }
+            String className = symbolTable.getClassName();
+            String superClassName = symbolTable.getSuper();
+            if (assignmentType.equals(className) && !childType.equals(className) && (!childType.equals(superClassName))) {
+                Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Incompatible types " + childType + " and " + assignmentType + " for assignment");
+                reports.add(report);
+            }
             if (!childType.equals(assignmentType) && (assignmentType.equals("int") || assignmentType.equals("bool") || assignmentType.equals("int[]"))){
                 Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Incompatible types " + childType + " and " + assignmentType + " for assignment");
                 reports.add(report);
             }
         }
         for (JmmNode child_ : node.getChildren()) {
-            verifyAssignments(child_, reports);
+            verifyAssignments(child_, symbolTable, reports);
+        }
+    }
+    private void verifyArrayAccess(JmmNode node,List<Report> reports) {
+        if (Objects.equals(node.getKind(), "ArrayAccess")) {
+            JmmNode child = node.getChildren().get(0);
+            if (!child.get("isArray").equals("true")) {
+                Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Cannot access array");
+                reports.add(report);
+            }
+        }
+        for (JmmNode child_ : node.getChildren()) {
+            verifyArrayAccess(child_, reports);
         }
     }
 
