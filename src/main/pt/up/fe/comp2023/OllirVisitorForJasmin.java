@@ -18,6 +18,7 @@ import static org.specs.comp.ollir.OperationType.*;
 
 public class OllirVisitorForJasmin{
 
+    private String className;
     public String visit(ClassUnit classUnit) {
         StringBuilder result = new StringBuilder();
 
@@ -30,6 +31,7 @@ public class OllirVisitorForJasmin{
     public StringBuilder visitClassHeader(ClassUnit classUnit) {
         StringBuilder result = new StringBuilder();
         result.append(".class public ").append(classUnit.getClassName()).append("\n");
+        this.className = classUnit.getClassName();
         result.append(".super ");
         if (classUnit.getSuperClass() == null){
             result.append("java/lang/Object\n\n");
@@ -52,7 +54,7 @@ public class OllirVisitorForJasmin{
         StringBuilder result = new StringBuilder();
         result.append(".field ");
         if (field.getFieldAccessModifier().name().equals("DEFAULT")){
-            result.append("private");
+            result.append("private ");
         }else{
             result.append(field.getFieldAccessModifier().toString().toLowerCase()).append(" ");
         }
@@ -126,6 +128,8 @@ public class OllirVisitorForJasmin{
                     result.append(visitCallInstruction((CallInstruction) instruction,localVariableIndices));
                 } else if (instruction instanceof ReturnInstruction){
                     result.append(visitReturnStatement((ReturnInstruction) instruction, localVariableIndices));
+                } else if (instruction instanceof PutFieldInstruction){
+                    result.append(visitPutFieldInstruction((PutFieldInstruction) instruction,localVariableIndices));
                 }
             }
             if (method.getReturnType().getTypeOfElement().equals(VOID)){
@@ -149,6 +153,8 @@ public class OllirVisitorForJasmin{
             result.append(visitBinaryOpInstruction((BinaryOpInstruction) rhs, localVariableIndices));
         } else if (rhs instanceof CallInstruction){
             result.append(visitCallInstruction((CallInstruction) rhs,localVariableIndices));
+        } else if (rhs instanceof  GetFieldInstruction) {
+            result.append(visitGetFieldInstruction((GetFieldInstruction) rhs, localVariableIndices));
         }
 
         Operand destOperand = (Operand) assign.getDest();
@@ -318,6 +324,49 @@ public class OllirVisitorForJasmin{
     }
     public StringBuilder visitInvokeStatic(CallInstruction callInstruction,HashMap<String,Integer> localVariableIndices){
         StringBuilder result = new StringBuilder();
+        return result;
+    }
+
+    public StringBuilder visitPutFieldInstruction(PutFieldInstruction putFieldInstruction, HashMap<String,Integer> localVariableIndices){
+        StringBuilder result = new StringBuilder();
+        Integer value = Integer.parseInt(((LiteralElement) putFieldInstruction.getThirdOperand()).getLiteral());
+        Element firstOperand =putFieldInstruction.getFirstOperand();
+        Element secondOperand = putFieldInstruction.getSecondOperand();
+        if (firstOperand.getType().getTypeOfElement().equals(THIS)){
+            result.append("\taload_0\n");
+            jasmincodeForIntegerVariable(result,value);
+            result.append("\tputfield ").append(this.className).append("/").append(((Operand) putFieldInstruction.getSecondOperand()).getName());
+        } else {
+            result.append("\taload_").append(localVariableIndices.get(((Operand)putFieldInstruction.getFirstOperand()).getName()));
+            jasmincodeForIntegerVariable(result,value);
+            result.append("\tputfield ").append(((Operand) putFieldInstruction.getFirstOperand())).append("/").append(((Operand) putFieldInstruction.getSecondOperand()).getName());
+        }
+        if (secondOperand.getType().getTypeOfElement().equals(INT32)) {
+            result.append(" I");
+        }   else if (secondOperand.getType().getTypeOfElement().equals(BOOLEAN)){
+            result.append(" Z");
+        }
+        result.append("\n");
+        return result;
+    }
+
+    public StringBuilder visitGetFieldInstruction(GetFieldInstruction getFieldInstruction, HashMap<String,Integer> localVariableIndices){
+        StringBuilder result = new StringBuilder();
+        Element firstOperand = getFieldInstruction.getFirstOperand();
+        Element secondOperand = getFieldInstruction.getSecondOperand();
+        if (firstOperand.getType().getTypeOfElement().equals(THIS)){
+            result.append("\taload_0\n");
+            result.append("\tgetfield ").append(this.className).append("/").append(((Operand) getFieldInstruction.getSecondOperand()).getName());
+        } else {
+            result.append("\taload_").append(localVariableIndices.get(((Operand)getFieldInstruction.getFirstOperand()).getName()));
+            result.append("\tgetfield ").append(((Operand) getFieldInstruction.getFirstOperand())).append("/").append(((Operand) getFieldInstruction.getSecondOperand()).getName());
+        }
+        if (secondOperand.getType().getTypeOfElement().equals(INT32)) {
+            result.append(" I");
+        }   else if (secondOperand.getType().getTypeOfElement().equals(BOOLEAN)){
+            result.append(" Z");
+        }
+        result.append("\n");
         return result;
     }
 
