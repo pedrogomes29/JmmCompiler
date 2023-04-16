@@ -6,10 +6,12 @@ import org.specs.comp.ollir.*;
 import javax.print.DocFlavor;
 import java.beans.Statement;
 import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
 import static org.specs.comp.ollir.CallType.NEW;
+import static org.specs.comp.ollir.CallType.invokespecial;
 import static org.specs.comp.ollir.ElementType.*;
 import static org.specs.comp.ollir.InstructionType.ASSIGN;
 import static org.specs.comp.ollir.OperationType.*;
@@ -100,7 +102,9 @@ public class OllirVisitorForJasmin{
                 } else if (arg.getType().getTypeOfElement().name().equals("ARRAYREF")){
                     result.append("[Ljava/lang/String;");
                 }
-                localVariableIndices.put(((Operand) arg).getName(),localVariableIndices.size() + 1);
+                if (!arg.getType().getTypeOfElement().name().equals("ARRAYREF")) {
+                    localVariableIndices.put(((Operand) arg).getName(), localVariableIndices.size() + 1);
+                }
             }
 
             result.append(")");
@@ -119,7 +123,7 @@ public class OllirVisitorForJasmin{
                 if (instruction instanceof AssignInstruction) {
                     result.append(visitAssignmentStatement((AssignInstruction) instruction, localVariableIndices));
                 } else if (instruction instanceof CallInstruction) {
-                    result.append(visitCallInstruction((CallInstruction) instruction));
+                    result.append(visitCallInstruction((CallInstruction) instruction,localVariableIndices));
                 } else if (instruction instanceof ReturnInstruction){
                     result.append(visitReturnStatement((ReturnInstruction) instruction, localVariableIndices));
                 }
@@ -144,12 +148,12 @@ public class OllirVisitorForJasmin{
         } else if (rhs instanceof BinaryOpInstruction){
             result.append(visitBinaryOpInstruction((BinaryOpInstruction) rhs, localVariableIndices));
         } else if (rhs instanceof CallInstruction){
-            result.append(visitCallInstruction((CallInstruction) rhs));
+            result.append(visitCallInstruction((CallInstruction) rhs,localVariableIndices));
         }
 
         Operand destOperand = (Operand) assign.getDest();
-        InstructionType t =  assign.getInstType();
-        if (localVariableIndices.containsKey(destOperand.getName()) && !assign.getInstType().equals(ASSIGN)) {
+        InstructionType ins =  assign.getInstType();
+        if (localVariableIndices.containsKey(destOperand.getName()) && !ins.equals(ASSIGN)) {
             result.append("\tiload_").append(localVariableIndices.get(destOperand.getName())).append("\n");
         } else {
             String localVariableName = destOperand.getName();
@@ -157,10 +161,18 @@ public class OllirVisitorForJasmin{
             if (!localVariableIndices.containsKey(localVariableName)){
                 localVariableIdx = localVariableIndices.size() + 1;
                 localVariableIndices.put(localVariableName, localVariableIdx);
-                result.append("\tistore_").append(localVariableIdx).append("\n");
+                if (! (rhs instanceof CallInstruction)) {
+                    result.append("\tistore_").append(localVariableIdx).append("\n");
+                }else {
+                    result.append("\tastore_").append(localVariableIdx).append("\n");
+                }
             } else {
                 localVariableIdx = localVariableIndices.get(localVariableName);
-                result.append("\tistore_").append(localVariableIdx).append("\n");
+                if (! (rhs instanceof CallInstruction)) {
+                    result.append("\tistore_").append(localVariableIdx).append("\n");
+                }else {
+                    result.append("\tastore_").append(localVariableIdx).append("\n");
+                }
             }
         }
 
@@ -192,17 +204,26 @@ public class OllirVisitorForJasmin{
         return result;
     }
 
-    public StringBuilder visitCallInstruction(CallInstruction callInstruction){
+    public StringBuilder visitCallInstruction(CallInstruction callInstruction,HashMap<String,Integer> localVariableIndices){
         StringBuilder result = new StringBuilder();
         Operand firstArg = (Operand) callInstruction.getFirstArg();
         ClassType classType = (ClassType) firstArg.getType();
+        CallType invocationType = callInstruction.getInvocationType();
+        switch (invocationType){
+            case invokespecial -> result.append(visitInvokeSpecial(callInstruction,localVariableIndices));
+            case invokestatic -> result.append(visitInvokeStatic(callInstruction, localVariableIndices));
+            case invokevirtual -> result.append(visitInvokeVirtual(callInstruction, localVariableIndices));
+        }
         result.append("\t").append(callInstruction.getInvocationType().toString().toLowerCase()).append(" ").append(classType.getName());
         if (callInstruction.getSecondArg() != null) {
             result.append("/").append(((LiteralElement) callInstruction.getSecondArg()).getLiteral().toString().replaceAll("\"",""));
         }
-        result.append("(");
 
-        for (Element e : callInstruction.getListOfOperands()) {
+        if (! invocationType.equals(NEW)) {
+            result.append("(");
+        }
+        ArrayList<Element> operands = callInstruction.getListOfOperands();
+        for (Element e : operands) {
             if (e.getType().getTypeOfElement().equals(VOID)){
                 result.append("V");
             } else if (e.getType().getTypeOfElement().equals(INT32)){
@@ -212,7 +233,9 @@ public class OllirVisitorForJasmin{
             }
         }
 
-        result.append(")");
+        if (! invocationType.equals(NEW)) {
+            result.append(")");
+        }
         if (callInstruction.getReturnType().getTypeOfElement().equals(VOID)){
             result.append("V");
         } else if (callInstruction.getReturnType().getTypeOfElement().equals(INT32)){
@@ -221,6 +244,13 @@ public class OllirVisitorForJasmin{
             result.append("Z");
         }
         result.append("\n");
+
+        if (invocationType.equals(NEW)){
+            result.append("\tdup\n");
+        }
+        if (invocationType.equals(invokespecial)) {
+            result.append(("\tpop\n"));
+        }
 
         return result;
     }
@@ -275,4 +305,20 @@ public class OllirVisitorForJasmin{
         }
         return result;
     }
+
+    public StringBuilder visitInvokeSpecial(CallInstruction callInstruction,HashMap<String,Integer> localVariableIndices){
+        StringBuilder result = new StringBuilder();
+        String name = ((Operand)callInstruction.getFirstArg()).getName();
+        result.append("\taload_").append(localVariableIndices.get(name)).append("\n");
+        return result;
+    }
+    public StringBuilder visitInvokeVirtual(CallInstruction callInstruction,HashMap<String,Integer> localVariableIndices){
+        StringBuilder result = new StringBuilder();
+        return result;
+    }
+    public StringBuilder visitInvokeStatic(CallInstruction callInstruction,HashMap<String,Integer> localVariableIndices){
+        StringBuilder result = new StringBuilder();
+        return result;
+    }
+
 }

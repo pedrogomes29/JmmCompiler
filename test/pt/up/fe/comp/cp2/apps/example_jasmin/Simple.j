@@ -23,6 +23,7 @@ istore 4
 iload 4
 ireturn
 .end method
+
 .method public static main([Ljava/lang/String;)V
 .limit stack 4
 .limit locals 7
@@ -49,6 +50,7 @@ iload 6
 invokestatic io/println(I)V
 return
 .end method
+
 .method public constInstr()I
 .limit stack 1
 .limit locals 2
