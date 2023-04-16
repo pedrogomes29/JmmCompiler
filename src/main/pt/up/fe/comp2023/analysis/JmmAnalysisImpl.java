@@ -25,6 +25,7 @@ public class JmmAnalysisImpl implements JmmAnalysis {
         verifyAssignments(rootNode, symbolTable, reports);
         verifyTypes(rootNode, reports);
         verifyExpressionsInConditions(rootNode, reports);
+        verifyArrayAccess(rootNode, reports);
         return new JmmSemanticsResult(jmmParserResult, symbolTable, reports);
     }
     private void verifyIdentifiers(JmmNode node, JmmSymbolTable symbolTable, List<Report> reports) {
@@ -94,6 +95,18 @@ public class JmmAnalysisImpl implements JmmAnalysis {
         }
         for (JmmNode child_ : node.getChildren()) {
             verifyAssignments(child_, symbolTable, reports);
+        }
+    }
+    private void verifyArrayAccess(JmmNode node,List<Report> reports) {
+        if (Objects.equals(node.getKind(), "ArrayAccess")) {
+            JmmNode child = node.getChildren().get(0);
+            if (!child.get("isArray").equals("true")) {
+                Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Cannot access array");
+                reports.add(report);
+            }
+        }
+        for (JmmNode child_ : node.getChildren()) {
+            verifyArrayAccess(child_, reports);
         }
     }
 

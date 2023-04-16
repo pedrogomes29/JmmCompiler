@@ -41,7 +41,16 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         addVisit("IfStatement",this::dealWithIfStatement);
         addVisit("This",this::dealWithThis);
         addVisit("ArrayConstructor",this::dealWithArrayConstructor);
+        addVisit("ArrayAccess",this::dealWithArrayAccess);
         setDefaultVisit(this::dealWithDefaultVisit);
+    }
+
+    private String dealWithArrayAccess(JmmNode jmmNode, String s) {
+        String arrayName = visit(jmmNode.getJmmChild(0),"");
+        String index = visit(jmmNode.getJmmChild(1),"");
+        jmmNode.put("index",index);
+        jmmNode.put("var",arrayName);
+        return arrayName + "[" + index + "]";
     }
 
     private String dealWithIfStatement(JmmNode jmmNode, String s) {
