@@ -22,6 +22,7 @@ public class JmmAnalysisImpl implements JmmAnalysis {
         // Type verification
         List<Report> reports = new ArrayList<>();
         verifyIdentifiers(rootNode, symbolTable, reports);
+        verifyAssignments(rootNode, reports);
         verifyTypes(rootNode, reports);
         verifyExpressionsInConditions(rootNode, reports);
         return new JmmSemanticsResult(jmmParserResult, symbolTable, reports);
@@ -69,6 +70,20 @@ public class JmmAnalysisImpl implements JmmAnalysis {
             verifyExpressionsInConditions(child, reports);
         }
     }
+    private void verifyAssignments(JmmNode node, List<Report> reports) {
+        if (Objects.equals(node.getKind(), "Assignment")) {
+            JmmNode child = node.getChildren().get(0);
+            String childType = child.get("type");
+            String assignmentType = node.get("type");
+            if (!childType.equals(assignmentType) && (assignmentType.equals("i32") || assignmentType.equals("int") || assignmentType.equals("bool") || assignmentType.equals("int[]"))){
+                Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Incompatible types " + childType + " and " + assignmentType + " for assignment");
+                reports.add(report);
+            }
+        }
+        for (JmmNode child_ : node.getChildren()) {
+            verifyAssignments(child_, reports);
+        }
+    }
 
     private boolean areTypesCompatible(String leftType, String rightType, String isLeftArray, String isRightArray, String op) {
         boolean b = leftType.equals("int") && rightType.equals("int") || leftType.equals("i32") && rightType.equals("i32");
@@ -83,6 +98,9 @@ public class JmmAnalysisImpl implements JmmAnalysis {
         }
         if (op.equals("&&") || op.equals("||")) {
             return leftType.equals("boolean") && rightType.equals("boolean") && isLeftArray.equals("false") && isRightArray.equals("false");
+        }
+        if (op.equals("=")) {
+            return b || (leftType.equals("boolean") && rightType.equals("boolean"));
         }
         return false;
     }
