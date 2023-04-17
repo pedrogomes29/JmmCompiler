@@ -21,6 +21,8 @@ public class JmmSymbolTable implements SymbolTable{
     private HashMap<String,Boolean> methodIsStatic;
     private HashMap<String,String> methodToOllirCode;
 
+    private HashMap<String, JmmNode> methodToNode;
+
     private HashMap<String,List<String>> importToPackage;
 
     private Integer lastUsedVariable;
@@ -35,6 +37,7 @@ public class JmmSymbolTable implements SymbolTable{
         methodIsStatic = new HashMap<>();
         methodToOllirCode = new HashMap<>();
         importToPackage = new HashMap<>();
+        methodToNode = new HashMap<>();
         lastUsedVariable = -1;
         JmmVisitorForSymbolTable gen = new JmmVisitorForSymbolTable(this);
         gen.visit(node);
@@ -176,6 +179,12 @@ public class JmmSymbolTable implements SymbolTable{
             }
         }
         return false;
+    }
+    public JmmNode getMethodNode(String method){
+        return methodToNode.get(method);
+    }
+    public void addMethodNode(String method,JmmNode node){
+        methodToNode.put(method,node);
     }
     public void addError(String error){
         System.out.println(error);

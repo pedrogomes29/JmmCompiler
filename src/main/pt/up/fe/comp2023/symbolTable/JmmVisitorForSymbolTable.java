@@ -90,6 +90,7 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
     private String dealWithNormalMethod(JmmNode jmmNode , String s) {
         String functionName = jmmNode.get("functionName");
         symbolTable.addMethod(functionName);
+        symbolTable.addMethodNode(functionName,jmmNode);
 
         String type = visit(jmmNode.getJmmChild(0),"");
         Boolean isArray=false;
@@ -125,7 +126,7 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
 
     private String dealWithStaticMethod(JmmNode jmmNode , String s) {
         String functionName = jmmNode.get("functionName");
-
+        symbolTable.addMethodNode(functionName,jmmNode);
         symbolTable.addMethod(functionName);
         symbolTable.setReturnType(functionName,new Type("void",false));
         symbolTable.setLocalVariables(functionName,new ArrayList<>());
@@ -155,6 +156,7 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         Type returnType = null;
 
         if(objectWithMethod.get("import").equals("true")){ //imported class static method
+            jmmNode.put("import","true");
             returnType = (Type) jmmNode.getJmmParent().getObject("type");
 
         }

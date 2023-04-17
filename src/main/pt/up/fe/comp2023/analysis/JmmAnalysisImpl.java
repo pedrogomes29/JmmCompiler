@@ -36,6 +36,7 @@ public class JmmAnalysisImpl implements JmmAnalysis {
         verifyTypes(rootNode, reports);
         verifyExpressionsInConditions(rootNode, reports);
         verifyArrayAccess(rootNode, reports);
+        verifyArguments(rootNode, symbolTable, reports);
         return new JmmSemanticsResult(jmmParserResult, symbolTable, reports);
     }
     private void verifyIdentifiers(JmmNode node, JmmSymbolTable symbolTable, List<Report> reports) {
@@ -126,6 +127,36 @@ public class JmmAnalysisImpl implements JmmAnalysis {
         }
         for (JmmNode child_ : node.getChildren()) {
             verifyArrayAccess(child_, reports);
+        }
+    }
+    private void verifyArguments(JmmNode node, JmmSymbolTable symbolTable, List<Report> reports) {
+        if (Objects.equals(node.getKind(), "MethodCall")) {
+            if (node.get("import").equals("true")){
+                return;
+            }
+            String methodName = (String) node.get("methodName");
+            JmmNode methodNode = symbolTable.getMethodNode(methodName);
+            List<JmmNode> arguments = node.getChildren();
+            List<JmmNode> parameters = methodNode.getChildren().get(0).getChildren();
+            if (arguments.size() != parameters.size()) {
+                Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Wrong number of arguments for method " + methodName);
+                reports.add(report);
+            }
+            else {
+                for (int i = 0; i < arguments.size(); i++) {
+                    JmmNode argument = arguments.get(i);
+                    JmmNode parameter = parameters.get(i);
+                    String argumentType = ((Type) argument.getObject("type")).getName();
+                    String parameterType = ((Type) parameter.getObject("type")).getName();
+                    if (!argumentType.equals(parameterType)) {
+                        Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Incompatible types " + argumentType + " and " + parameterType + " for argument " + i + " of method " + methodName);
+                        reports.add(report);
+                    }
+                }
+            }
+        }
+        for (JmmNode child : node.getChildren()) {
+            verifyArguments(child, symbolTable, reports);
         }
     }
 
