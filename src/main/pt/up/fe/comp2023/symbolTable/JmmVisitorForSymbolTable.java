@@ -175,7 +175,6 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         String methodName = jmmNode.get("methodName");
         JmmNode objectWithMethod = children.get(0);
         visit(objectWithMethod);
-        System.out.println(objectWithMethod);
 
         boolean isStatic = true;
         Type returnType = null;
@@ -210,15 +209,20 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
                 }
             }
             else{
-                if(!symbolTable.getMethods().contains(methodName) && jmmNode.get("isImported").equals("false")&& symbolTable.getSuper()==null){
-                    throw new RuntimeException("Method " + methodName + " not found");
+                if(!symbolTable.getMethods().contains(methodName)){
+                    if(symbolTable.getSuper()!=null){
+                        jmmNode.put("isImported","true");
+                        if (jmmNode.getJmmParent().getKind().equals("ArrayAccess"))
+                            returnType = new Type("int",false);
+                        else {
+                            returnType = (Type) jmmNode.getJmmParent().getObject("type");
+                        }
+                        isStatic = Objects.equals(objectWithMethod.getKind(), "Identifier") && objectWithMethod.get("value")==symbolTable.getClassName();
+                    }
+                    else
+                        throw new RuntimeException("Method " + methodName + " not found");
                 }
-                if(symbolTable.getSuper()!=null){
-                    jmmNode.put("isImported","true");
-                    returnType = new Type(symbolTable.getSuper(),false);
-                    isStatic = false;
-                }
-                else {
+                else{
                     returnType = symbolTable.getReturnType(methodName);
                     isStatic = symbolTable.methodIsStatic(methodName);
                 }

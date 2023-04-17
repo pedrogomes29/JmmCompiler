@@ -1,31 +1,11 @@
-import io;
 import utils;
-
-class myClass {
-
-	myClass a;
-	int x;
-
-	public myClass get(){
- 		return a;
-	}
-
-
-    public int add(int x, int y){
-        return x + y;
+import Parent;
+class MyClass{
+    public int f(){
+        return this.g(5);
     }
-
-	public boolean m1(){
-	    int x;
-	    int y;
-	    x=1;
-	    y=2;
-        return !(x < 2 && x-y < 4);
-	}
-
-	public static void main(String[] args){
-		myClass A;
-		A = new myClass();
- 		A.m1();
-	}
+    public static void main(String[] args) {
+        int x;
+        x = utils.add(4,5*6);
+    }
 }
