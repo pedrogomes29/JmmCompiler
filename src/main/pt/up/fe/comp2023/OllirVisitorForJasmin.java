@@ -88,7 +88,7 @@ public class OllirVisitorForJasmin{
                 result.append("java/lang/Object/<init>()V\n");
             }
             result.append("\treturn\n");
-            result.append(".end method\n");
+            result.append(".end method");
         }  else {
             result.append(".method").append(" ").append(method.getMethodAccessModifier().toString().toLowerCase()).append(" ");
             if (method.isStaticMethod()){
@@ -137,7 +137,7 @@ public class OllirVisitorForJasmin{
             } else {
                 result.append("\tireturn\n");
             }
-            result.append(".end method\n");
+            result.append(".end method");
         }
 
         return result;
