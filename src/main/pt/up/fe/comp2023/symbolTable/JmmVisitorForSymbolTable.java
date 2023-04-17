@@ -37,6 +37,7 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         addVisit("Boolean",this::dealWithBoolean);
         addVisit("ExpressionStatement",this::dealWithExpressionStatement);
         addVisit("IfStatement",this::dealWithIfStatement);
+        addVisit("WhileStatement",this::dealWithWhileStatement);
         addVisit("This",this::dealWithThis);
         addVisit("ArrayConstructor",this::dealWithArrayConstructor);
         addVisit("ArrayAccess",this::dealWithArrayAccess);
@@ -95,6 +96,11 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         return "\t\tif " + condition + " {\n" + ifCode + "\t\t}\n" + elseCode;
     }
 
+    private String dealWithWhileStatement(JmmNode jmmNode, String s) {
+        String condition = visit(jmmNode.getJmmChild(0),"");
+        String whileCode = visit(jmmNode.getJmmChild(1),"");
+        return "\t\twhile " + condition + " {\n" + whileCode + "\t\t}\n";
+    }
 
     private String dealWithProgram (JmmNode jmmNode , String s) {
 
