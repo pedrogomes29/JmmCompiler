@@ -233,7 +233,7 @@ public class OllirVisitorForJasmin{
         }
         result.append("\t").append(callInstruction.getInvocationType().toString().toLowerCase()).append(" ");
         if (firstArg.getName().equals("this")){
-            result.append(firstArg.getName());
+            result.append(this.className);
         } else if (localVariableIndices.containsKey(firstArg.getName())) {
             result.append(classType.getName());
         } else {
