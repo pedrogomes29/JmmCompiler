@@ -203,7 +203,11 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
                 else jmmNode.put("isImported","false");
             }
             if(isImported) {
-                returnType = (Type) jmmNode.getJmmParent().getObject("type");
+                if (jmmNode.getJmmParent().getKind().equals("ArrayAccess"))
+                    returnType = new Type("int",false);
+                else {
+                    returnType = (Type) jmmNode.getJmmParent().getObject("type");
+                }
             }
             else{
                 if(!symbolTable.getMethods().contains(methodName) && jmmNode.get("isImported").equals("false")&& symbolTable.getSuper()==null){
