@@ -157,7 +157,7 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
 
         if(objectWithMethod.get("import").equals("true")){ //imported class static method
             jmmNode.put("isImported","true");
-            returnType = (Type) jmmNode.getJmmParent().getOptionalObject("type").orElse(new Type("int",false));
+            returnType = (Type) jmmNode.getJmmParent().getObject("type");
         }
         else {
             jmmNode.put("import","false");//result of method call can never be a static reference to a class
