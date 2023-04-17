@@ -117,7 +117,7 @@ public class JmmAnalysisImpl implements JmmAnalysis {
             JmmNode child = node.getChildren().get(0);
             JmmNode index = node.getChildren().get(1);
             Type childType = (Type) child.getObject("type");
-            Type indexType = (Type) index.getObject("type");
+            Type indexType = (Type) index.getOptionalObject("type").orElse(new Type("int", false));
             if (!childType.isArray()) {
                 Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Cannot access array");
                 reports.add(report);
