@@ -2,6 +2,7 @@ package pt.up.fe.comp2023.analysis;
 
 import pt.up.fe.comp.jmm.analysis.JmmAnalysis;
 import pt.up.fe.comp.jmm.analysis.JmmSemanticsResult;
+import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.parser.JmmParserResult;
 import pt.up.fe.comp.jmm.ast.JmmNode;
 import pt.up.fe.comp.jmm.report.Report;
@@ -37,6 +38,7 @@ public class JmmAnalysisImpl implements JmmAnalysis {
         verifyExpressionsInConditions(rootNode, reports);
         verifyArrayAccess(rootNode, reports);
         verifyArguments(rootNode, symbolTable, reports);
+        verifyReturn(rootNode, symbolTable, reports);
         return new JmmSemanticsResult(jmmParserResult, symbolTable, reports);
     }
     private void verifyIdentifiers(JmmNode node, JmmSymbolTable symbolTable, List<Report> reports) {
@@ -136,8 +138,8 @@ public class JmmAnalysisImpl implements JmmAnalysis {
             }
             String methodName = (String) node.get("methodName");
             JmmNode methodNode = symbolTable.getMethodNode(methodName);
-            List<JmmNode> arguments = node.getChildren();
-            List<JmmNode> parameters = methodNode.getChildren().get(0).getChildren();
+            List<JmmNode> arguments = node.getChildren().subList(1, node.getChildren().size());
+            List<Symbol> parameters = symbolTable.getParameters(methodName);
             if (arguments.size() != parameters.size()) {
                 Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Wrong number of arguments for method " + methodName);
                 reports.add(report);
@@ -145,9 +147,9 @@ public class JmmAnalysisImpl implements JmmAnalysis {
             else {
                 for (int i = 0; i < arguments.size(); i++) {
                     JmmNode argument = arguments.get(i);
-                    JmmNode parameter = parameters.get(i);
+                    Symbol parameter = parameters.get(i);
                     String argumentType = ((Type) argument.getObject("type")).getName();
-                    String parameterType = ((Type) parameter.getObject("type")).getName();
+                    String parameterType = ((Type) parameter.getType()).getName();
                     if (!argumentType.equals(parameterType)) {
                         Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Incompatible types " + argumentType + " and " + parameterType + " for argument " + i + " of method " + methodName);
                         reports.add(report);
@@ -159,7 +161,21 @@ public class JmmAnalysisImpl implements JmmAnalysis {
             verifyArguments(child, symbolTable, reports);
         }
     }
-
+    private void verifyReturn(JmmNode node, JmmSymbolTable symbolTable, List<Report> reports) {
+        if (Objects.equals(node.getKind(), "NormalMethod")) {
+            String methodName = node.get("functionName");
+            String returnType = ((Type) symbolTable.getReturnType(methodName)).getName();
+            JmmNode child = node.getChildren().get(node.getNumChildren() - 1);
+            String childType = ((Type) child.getObject("type")).getName();
+            if (!childType.equals(returnType)) {
+                Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Incompatible types " + childType + " and " + returnType + " for return");
+                reports.add(report);
+            }
+        }
+        for (JmmNode child : node.getChildren()) {
+            verifyReturn(child, symbolTable, reports);
+        }
+    }
     private boolean areTypesCompatible(Type leftType, Type rightType, String op) {
         boolean b = leftType.getName().equals("int") && rightType.getName().equals("int");
         if (op.equals("+") || op.equals("-") || op.equals("*") || op.equals("/")) {
