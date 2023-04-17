@@ -6,6 +6,7 @@ import pt.up.fe.comp.jmm.analysis.table.SymbolTable;
 import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.ollir.JmmOptimization;
 import pt.up.fe.comp.jmm.ollir.OllirResult;
+import pt.up.fe.comp.jmm.report.Report;
 import pt.up.fe.comp2023.symbolTable.JmmSymbolTable;
 import pt.up.fe.comp2023.symbolTable.JmmVisitorForSymbolTable;
 
@@ -94,6 +95,12 @@ public class JmmOptimizationImpl implements JmmOptimization {
 
     @Override
     public OllirResult toOllir(JmmSemanticsResult jmmSemanticsResult) {
+        if(jmmSemanticsResult.getReports().size()>0) {
+            for (Report report:jmmSemanticsResult.getReports())
+                System.out.println(report.toString());
+            return new OllirResult("", jmmSemanticsResult.getConfig());
+
+        }
         JmmSymbolTable symbolTable = (JmmSymbolTable) jmmSemanticsResult.getSymbolTable();
         JmmVisitorForOllir gen = new JmmVisitorForOllir(symbolTable);
         gen.visit(jmmSemanticsResult.getRootNode());

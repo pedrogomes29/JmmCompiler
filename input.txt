@@ -3,10 +3,11 @@ import a;
 
 class myClass {
     int a;
-    public int test() {
-        return 2;
+    public int test(boolean x) {
+        return this.test(utils.f(5));
+
     }
     public static void main(String[] args) {
-        a = 4;
+
     }
 }
