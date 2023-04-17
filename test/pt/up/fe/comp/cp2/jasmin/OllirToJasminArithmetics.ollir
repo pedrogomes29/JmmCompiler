@@ -14,6 +14,14 @@ Test {
 		ret.V;
 	}
 
+	.method public m().Test {
+            test.Test :=.Test new(Test).Test;
+    		invokespecial(test.Test,"<init>").V;
+    	    c.i32 :=.i32 invokevirtual(test.Test, "foo").i32;
+    	    invokestatic(io, "println", c.i32).V;
+    		ret.test.Test;
+    	}
+
 
 	.method public foo().i32 {
 		a.i32 :=.i32 1.i32;

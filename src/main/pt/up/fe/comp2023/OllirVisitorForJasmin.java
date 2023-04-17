@@ -91,17 +91,17 @@ public class OllirVisitorForJasmin{
             result.append(".end method");
         }  else {
             result.append(".method").append(" ").append(method.getMethodAccessModifier().toString().toLowerCase()).append(" ");
-            if (method.isStaticMethod()){
+            if (method.isStaticMethod()) {
                 result.append("static ");
             }
             result.append(method.getMethodName()).append("(");
-            HashMap<String,Integer> localVariableIndices = new HashMap<String,Integer>();
+            HashMap<String, Integer> localVariableIndices = new HashMap<String, Integer>();
             for (Element arg : method.getParams()) {
                 if (arg.getType().getTypeOfElement().name().equals("INT32")) {
                     result.append("I");
-                } else if (arg.getType().getTypeOfElement().name().equals("BOOLEAN")){
+                } else if (arg.getType().getTypeOfElement().name().equals("BOOLEAN")) {
                     result.append("Z");
-                } else if (arg.getType().getTypeOfElement().name().equals("ARRAYREF")){
+                } else if (arg.getType().getTypeOfElement().name().equals("ARRAYREF")) {
                     result.append("[Ljava/lang/String;");
                 }
                 if (!arg.getType().getTypeOfElement().name().equals("ARRAYREF")) {
@@ -116,8 +116,8 @@ public class OllirVisitorForJasmin{
                 result.append("I").append("\n");
             } else if (method.getReturnType().getTypeOfElement().name().equals("VOID")) {
                 result.append("V").append("\n");
-            } else if (method.getReturnType().getTypeOfElement().equals("CLASS")) {
-                result.append("L").append("\n");
+            } else if (method.getReturnType().getTypeOfElement().name().equals("OBJECTREF")) {
+                result.append("L").append(((ClassType) method.getReturnType()).getName()).append(";\n");
             }
 
 
@@ -127,15 +127,17 @@ public class OllirVisitorForJasmin{
                 if (instruction instanceof AssignInstruction) {
                     result.append(visitAssignmentStatement((AssignInstruction) instruction, localVariableIndices));
                 } else if (instruction instanceof CallInstruction) {
-                    result.append(visitCallInstruction((CallInstruction) instruction,localVariableIndices));
-                } else if (instruction instanceof ReturnInstruction){
+                    result.append(visitCallInstruction((CallInstruction) instruction, localVariableIndices));
+                } else if (instruction instanceof ReturnInstruction) {
                     result.append(visitReturnStatement((ReturnInstruction) instruction, localVariableIndices));
-                } else if (instruction instanceof PutFieldInstruction){
-                    result.append(visitPutFieldInstruction((PutFieldInstruction) instruction,localVariableIndices));
+                } else if (instruction instanceof PutFieldInstruction) {
+                    result.append(visitPutFieldInstruction((PutFieldInstruction) instruction, localVariableIndices));
                 }
             }
-            if (method.getReturnType().getTypeOfElement().equals(VOID)){
+            if (method.getReturnType().getTypeOfElement().equals(VOID)) {
                 result.append("\treturn\n");
+            } else if (method.getReturnType().getTypeOfElement().equals(OBJECTREF)){
+                result.append("\tareturn\n");
             } else {
                 result.append("\tireturn\n");
             }
@@ -268,7 +270,7 @@ public class OllirVisitorForJasmin{
                 result.append("I");
             } else if (e.getType().getTypeOfElement().equals(BOOLEAN)){
                 result.append("Z");
-            } else if (e.getType().getTypeOfElement().equals(CLASS)){
+            } else if (e.getType().getTypeOfElement().equals(OBJECTREF)){
                 result.append("L");
             }
         }
