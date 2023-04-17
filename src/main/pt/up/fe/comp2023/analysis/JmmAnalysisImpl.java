@@ -94,6 +94,10 @@ public class JmmAnalysisImpl implements JmmAnalysis {
     }
     private void verifyArrayAccess(JmmNode node,List<Report> reports) {
         if (Objects.equals(node.getKind(), "ArrayAccess")) {
+            if(node.getChildren().size() != 2){
+                Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Array access must have 2 children");
+                reports.add(report);
+            }
             JmmNode child = node.getChildren().get(0);
             JmmNode index = node.getChildren().get(1);
             Type childType = (Type) child.getObject("type");
@@ -106,7 +110,6 @@ public class JmmAnalysisImpl implements JmmAnalysis {
                 Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Array index must be of type int");
                 reports.add(report);
             }
-
         }
         for (JmmNode child_ : node.getChildren()) {
             verifyArrayAccess(child_, reports);
