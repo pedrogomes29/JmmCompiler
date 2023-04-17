@@ -2,17 +2,10 @@ import utils;
 import a;
 
 class myClass {
-
-    int x;
-
-    public int test(){
-        int[] x;
-        int y;
-        y = x[a.b()];
-        return y;
-    }
-
-    public static void main(String[] args){
-        x = this.test();
+    public int foo() {
+        bool a;
+        a = new int[10];
+        a[1] = 2;
+        return 2;
     }
 }

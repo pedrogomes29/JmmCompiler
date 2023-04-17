@@ -40,7 +40,32 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         addVisit("This",this::dealWithThis);
         addVisit("ArrayConstructor",this::dealWithArrayConstructor);
         addVisit("ArrayAccess",this::dealWithArrayAccess);
+        addVisit("ArrayAssignment",this::dealWithArrayAssignment);
         setDefaultVisit(this::dealWithDefaultVisit);
+    }
+
+    private String dealWithArrayAssignment(JmmNode jmmNode, String s) {
+        String arrayName = jmmNode.get("array");
+        String methodName = jmmNode.getJmmParent().get("functionName");
+        List<Symbol> localVars = symbolTable.getLocalVariables(methodName);
+        for(Symbol localVar : localVars){
+            if(localVar.getName().equals(arrayName)){
+                if(localVar.getType().isArray()){
+                    break;
+                }
+                else {
+                    throw new RuntimeException("Trying to access a non array variable as an array");
+                }
+            }
+            else {
+                throw new RuntimeException("Array not found");
+            }
+        }
+        String index = visit(jmmNode.getJmmChild(0),"value");
+        String value = visit(jmmNode.getJmmChild(1),"value");
+        jmmNode.putObject("type",new Type("int",false));
+        jmmNode.putObject("array",arrayName);
+        return "\t\t" + arrayName + "[" + index + "] = " + value + ";\n";
     }
 
     private String dealWithArrayAccess(JmmNode jmmNode, String s) {

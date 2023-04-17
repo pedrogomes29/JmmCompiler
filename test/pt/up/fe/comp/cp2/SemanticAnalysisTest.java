@@ -135,6 +135,6 @@ public class SemanticAnalysisTest {
     public void myTest() {
         var result = TestUtils
                 .analyse(SpecsIo.getResource("pt/up/fe/comp/cp2/semanticanalysis/MyTest.jmm"));
-        TestUtils.noErrors(result);
+        TestUtils.mustFail(result);
     }
 }
