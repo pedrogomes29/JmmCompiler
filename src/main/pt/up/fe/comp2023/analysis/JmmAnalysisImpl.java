@@ -100,10 +100,16 @@ public class JmmAnalysisImpl implements JmmAnalysis {
     private void verifyArrayAccess(JmmNode node,List<Report> reports) {
         if (Objects.equals(node.getKind(), "ArrayAccess")) {
             JmmNode child = node.getChildren().get(0);
+            JmmNode index = node.getChildren().get(1);
             if (!child.get("isArray").equals("true")) {
                 Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Cannot access array");
                 reports.add(report);
             }
+            if (!index.get("type").equals("int") && !index.get("type").equals("i32")) {
+                Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Array index must be of type int");
+                reports.add(report);
+            }
+
         }
         for (JmmNode child_ : node.getChildren()) {
             verifyArrayAccess(child_, reports);
