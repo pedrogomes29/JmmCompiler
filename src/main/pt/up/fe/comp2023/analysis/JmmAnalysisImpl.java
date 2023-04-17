@@ -106,7 +106,7 @@ public class JmmAnalysisImpl implements JmmAnalysis {
                 Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Cannot access array");
                 reports.add(report);
             }
-            if (!indexType.getName().equals("int")) {
+            if (!indexType.getName().equals("int") || indexType.isArray()) {
                 Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Array index must be of type int");
                 reports.add(report);
             }
