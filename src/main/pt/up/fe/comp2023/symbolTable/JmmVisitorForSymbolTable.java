@@ -151,7 +151,7 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         String methodName = jmmNode.get("methodName");
         JmmNode objectWithMethod = children.get(0);
         visit(objectWithMethod);
-
+        System.out.println(objectWithMethod);
 
         boolean isStatic = true;
         Type returnType = null;
@@ -241,12 +241,10 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
     private String dealWithId(JmmNode jmmNode,String varName) {
         Optional<JmmNode> methodNode = jmmNode.getAncestor("NormalMethod");
         String methodName;
-        Boolean isLocalVar = false;
-        Boolean isField = true;
-
 
         if (methodNode.isEmpty())
             methodNode = jmmNode.getAncestor("StaticMethod");
+
 
         for (String imported_class : symbolTable.getImports()) {
             if (Objects.equals(imported_class, varName)) {

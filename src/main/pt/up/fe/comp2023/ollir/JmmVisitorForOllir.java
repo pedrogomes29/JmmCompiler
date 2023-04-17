@@ -95,7 +95,8 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
         String functionName = jmmNode.get("functionName");
 
         StringBuilder methodCode = new StringBuilder();
-        for (JmmNode child:jmmNode.getChildren()){
+        List<JmmNode> children = jmmNode.getChildren();
+        for (JmmNode child:children.subList(symbolTable.getLocalVariables(functionName).size(),children.size())){
             String childCode = visit(child,"");
             methodCode.append(childCode);
         }
@@ -176,12 +177,35 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
     private String dealWithIdentifier(JmmNode jmmNode, String s) {
         String varName = jmmNode.get("value");
         String varType = JmmOptimizationImpl.typeToOllir((Type)jmmNode.getObject("type"));
-        String idCode = varName+"."+varType;
-        if(Objects.equals(jmmNode.get("field"), "false") && Objects.equals(jmmNode.get("import"), "false"))
-            jmmNode.put("var",idCode);
-        else
-            jmmNode.put("var",varName);
-        jmmNode.put("previousCode",idCode);
+        String idCode = "";
+        if(Objects.equals(jmmNode.get("field"), "false") && Objects.equals(jmmNode.get("import"), "false")) {
+            StringBuilder code = new StringBuilder();
+            if (Objects.equals(jmmNode.get("param"), "true"))
+                code.append("$").append(jmmNode.get("offset")).append(".");
+
+            code.append(varName).append(".").append(varType);
+            idCode = code.toString();
+            jmmNode.put("previousCode",idCode);
+            jmmNode.put("var", idCode);
+        }
+        else {
+            if (Objects.equals(jmmNode.get("field"), "true")) {
+                String temp_var = symbolTable.getNewVariable();
+                temp_var = String.format("%s.%s", temp_var, varType);
+                jmmNode.put("var", temp_var);
+                idCode =  "\t\t" + temp_var + " :=." + varType +
+                        " getfield(this, " + varName + "." + varType + ")." + varType + ";\n";
+                jmmNode.put("previousCode",idCode);
+                jmmNode.put("var", temp_var);
+            }
+            else if(Objects.equals(jmmNode.get("import"), "true")){
+                idCode = jmmNode.get("value");
+                jmmNode.put("previousCode",idCode);
+                jmmNode.put("var", idCode);
+            }
+        }
+
+
         return idCode;
     }
 
