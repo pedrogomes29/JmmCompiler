@@ -440,6 +440,10 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
     }
 
     private  String dealWithThis (JmmNode jmmNode, String s) {
+        Optional<JmmNode> staticMethodNode = jmmNode.getAncestor("StaticMethod");
+        if(staticMethodNode.isPresent()){
+            throw new RuntimeException("Cannot use this in a static method");
+        }
         String className = symbolTable.getClassName();
         jmmNode.putObject("type", new Type(className,false));
         jmmNode.put("import","false");
@@ -448,7 +452,6 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         jmmNode.put("localVar","false");
         jmmNode.put("offset","0");
         return "";
-
     }
 
 
