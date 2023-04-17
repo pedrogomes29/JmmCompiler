@@ -45,7 +45,7 @@ public class JmmAnalysisImpl implements JmmAnalysis {
     }
 
     private void verifyFields(JmmNode node, JmmSymbolTable symbolTable, List<Report> reports) {
-        if(Objects.equals(node.getKind(), "Identifier")) {
+        if(Objects.equals(node.getKind(), "Identifier") && node.getOptional("undeclaredID").isEmpty()){
             String varName = (String) node.get("value");
             Optional<JmmNode> staticMethodNode = node.getAncestor("StaticMethod");
             if (staticMethodNode.isPresent() && Objects.equals(node.get("field"), "true")) {
@@ -54,13 +54,15 @@ public class JmmAnalysisImpl implements JmmAnalysis {
             }
 
         }
-
+        for (JmmNode child : node.getChildren()) {
+            verifyFields(child, symbolTable, reports);
+        }
     }
 
     private void verifyIdentifiers(JmmNode node, JmmSymbolTable symbolTable, List<Report> reports) {
         if (Objects.equals(node.getKind(), "Identifier")) {
             String name = (String) node.get("value");
-            if (!symbolTable.containsIdentifier(name)) {
+            if (node.getOptional("undeclaredID").isPresent()) {
                 Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Identifier " + name + " not declared");
                 reports.add(report);
             }
@@ -99,7 +101,7 @@ public class JmmAnalysisImpl implements JmmAnalysis {
         }
     }
     private void verifyAssignments(JmmNode node, JmmSymbolTable symbolTable, List<Report> reports) {
-        if (Objects.equals(node.getKind(), "Assignment")) {
+        if(Objects.equals(node.getKind(), "Assignment") && node.getOptional("undeclaredID").isEmpty()){
             String varName = node.get("varName");
             Optional<JmmNode> staticMethodNode = node.getAncestor("StaticMethod");
             if (staticMethodNode.isPresent() && Objects.equals(node.get("field"), "true")) {

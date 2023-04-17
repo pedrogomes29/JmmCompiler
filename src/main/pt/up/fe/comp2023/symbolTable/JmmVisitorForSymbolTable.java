@@ -320,21 +320,6 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
             methodNode = jmmNode.getAncestor("StaticMethod");
 
 
-        for (String imported_class : symbolTable.getImports()) {
-            if (Objects.equals(imported_class, varName)) {
-                jmmNode.putObject("type",new Type(imported_class,false));
-                jmmNode.put("import","true");
-                jmmNode.put("param","false");
-                jmmNode.put("field","false");
-                jmmNode.put("localVar","false");
-                jmmNode.put("offset","0");
-                return imported_class;
-            }
-        }
-        jmmNode.put("undeclaredID","true");
-
-
-        jmmNode.put("import","false");
         if (methodNode.isPresent()) {
             methodName = methodNode.get().get("functionName");
             List<Symbol> localVars = symbolTable.getLocalVariables(methodName);
@@ -346,6 +331,7 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
                     jmmNode.put("param", "false");
                     jmmNode.put("field", "false");
                     jmmNode.put("localVar", "true");
+                    jmmNode.put("import","false");
                     jmmNode.put("offset", "0");
                     return type.getName() + (type.isArray() ? "[]" : "");
                 }
@@ -364,6 +350,7 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
                     jmmNode.put("param", "true");
                     jmmNode.put("field", "false");
                     jmmNode.put("localVar", "false");
+                    jmmNode.put("import","false");
                     jmmNode.put("offset", String.valueOf(param_offset + i));
                     return type.getName() + (type.isArray() ? "[]" : "");
 
@@ -381,11 +368,25 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
                     jmmNode.put("field", "true");
                     jmmNode.put("localVar", "false");
                     jmmNode.put("offset", "0");
+                    jmmNode.put("import","false");
                     return type.getName() + (type.isArray() ? "[]" : "");
+                }
+            }
+            for (String imported_class : symbolTable.getImports()) {
+                if (Objects.equals(imported_class, varName)) {
+                    jmmNode.putObject("type",new Type(imported_class,false));
+                    jmmNode.put("import","true");
+                    jmmNode.put("param","false");
+                    jmmNode.put("field","false");
+                    jmmNode.put("localVar","false");
+                    jmmNode.put("offset","0");
+                    return imported_class;
                 }
             }
 
         }
+
+        jmmNode.put("undeclaredID","true");
         return "";
     }
 
