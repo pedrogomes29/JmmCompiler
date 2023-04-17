@@ -249,6 +249,7 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
         JmmNode child = jmmNode.getJmmChild(0);
         String childCode = visit(child);
         String temp_var = symbolTable.getNewVariable();
+        jmmNode.put("var",temp_var+".bool");
         if(isLiteralOrFunctionVariable(child)) {
             jmmNode.put("previousCode", "");
             jmmNode.put("rhsCode", String.format("!.bool %s", childCode));
@@ -256,8 +257,9 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
         }
         else {
             jmmNode.put("previousCode", childCode);
-            jmmNode.put("rhsCode", String.format("!.bool %s", childCode));
-            return childCode + String.format("\t\t%s.bool :=.bool !.bool %s;\n", temp_var, childCode);       }
+            jmmNode.put("rhsCode", String.format("!.bool %s", child.get("var")));
+            return childCode + String.format("\t\t%s.bool :=.bool !.bool %s;\n", temp_var, child.get("var"));
+        }
     }
 
     private String dealWithBinaryOp(JmmNode jmmNode,String s) {
