@@ -131,7 +131,7 @@ public class JmmAnalysisImpl implements JmmAnalysis {
     }
     private void verifyArguments(JmmNode node, JmmSymbolTable symbolTable, List<Report> reports) {
         if (Objects.equals(node.getKind(), "MethodCall")) {
-            if (node.get("import").equals("true")){
+            if (node.get("isImported").equals("true")){
                 return;
             }
             String methodName = (String) node.get("methodName");

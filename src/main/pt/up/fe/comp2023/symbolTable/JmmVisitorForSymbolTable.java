@@ -156,31 +156,40 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         Type returnType = null;
 
         if(objectWithMethod.get("import").equals("true")){ //imported class static method
-            jmmNode.put("import","true");
+            jmmNode.put("isImported","true");
             returnType = (Type) jmmNode.getJmmParent().getObject("type");
 
         }
         else {
-            jmmNode.put("import","false"); //result of method call can never be a static reference to a class
+            jmmNode.put("import","false");//result of method call can never be a static reference to a class
+            jmmNode.put("isImported","false");
             boolean isImported = false;
             String className = ((Type)objectWithMethod.getObject("type")).getName();
             for (String imported_class : symbolTable.getImports()) {
                 if (Objects.equals(imported_class, className)) {
+                    jmmNode.put("isImported","true");
                     isImported = true; //imported class normal method
                     isStatic = false;
                     break;
                 }
+                else jmmNode.put("isImported","false");
             }
-
             if(isImported) {
                 returnType = (Type) jmmNode.getJmmParent().getObject("type");
             }
             else{
-                if(!symbolTable.getMethods().contains(methodName)){
+                if(!symbolTable.getMethods().contains(methodName) && jmmNode.get("isImported").equals("false")&& symbolTable.getSuper()==null){
                     throw new RuntimeException("Method " + methodName + " not found");
                 }
-                returnType = symbolTable.getReturnType(methodName);
-                isStatic = symbolTable.methodIsStatic(methodName);
+                if(symbolTable.getSuper()!=null){
+                    jmmNode.put("isImported","true");
+                    returnType = new Type(symbolTable.getSuper(),false);
+                    isStatic = false;
+                }
+                else {
+                    returnType = symbolTable.getReturnType(methodName);
+                    isStatic = symbolTable.methodIsStatic(methodName);
+                }
             }
         }
         jmmNode.putObject("type",returnType);
