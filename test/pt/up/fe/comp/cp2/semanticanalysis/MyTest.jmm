@@ -1,13 +1,15 @@
 import utils;
+import a;
 
 class myClass {
 
     int x;
 
     public int test(){
-        int x;
-        x = utils.f(5);
-        return 2;
+        int[] x;
+        int y;
+        y = x[a.b()];
+        return y;
     }
 
     public static void main(String[] args){
