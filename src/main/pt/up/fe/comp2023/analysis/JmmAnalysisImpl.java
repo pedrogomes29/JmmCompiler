@@ -61,7 +61,7 @@ public class JmmAnalysisImpl implements JmmAnalysis {
         if (Objects.equals(node.getKind(), "IfStatement") || Objects.equals(node.getKind(), "WhileStatement")) {
             JmmNode condition = node.getChildren().get(0);
             String conditionType = ((Type)condition.getObject("type")).getName();
-            if (!conditionType.equals("boolean")) {
+            if (!conditionType.equals("bool")) {
                 Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Condition must be of type boolean");
                 reports.add(report);
             }
