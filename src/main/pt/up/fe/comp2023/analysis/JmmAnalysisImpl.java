@@ -61,7 +61,7 @@ public class JmmAnalysisImpl implements JmmAnalysis {
         if (Objects.equals(node.getKind(), "IfStatement") || Objects.equals(node.getKind(), "WhileStatement")) {
             JmmNode condition = node.getChildren().get(0);
             String conditionType = ((Type)condition.getObject("type")).getName();
-            if (!conditionType.equals("boolean")) {
+            if (!conditionType.equals("bool")) {
                 Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Condition must be of type boolean");
                 reports.add(report);
             }
@@ -83,7 +83,7 @@ public class JmmAnalysisImpl implements JmmAnalysis {
                 Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Incompatible types " + childType + " and " + assignmentType + " for assignment");
                 reports.add(report);
             }
-            if (!childType.equals(assignmentType) && (assignmentType.equals("int") || assignmentType.equals("bool") || assignmentType.equals("int[]"))){
+            if (!childType.equals(assignmentType) && (assignmentType.equals("int") || assignmentType.equals("boolean") || assignmentType.equals("int[]"))){
                 Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Incompatible types " + childType + " and " + assignmentType + " for assignment");
                 reports.add(report);
             }
@@ -94,6 +94,10 @@ public class JmmAnalysisImpl implements JmmAnalysis {
     }
     private void verifyArrayAccess(JmmNode node,List<Report> reports) {
         if (Objects.equals(node.getKind(), "ArrayAccess")) {
+            if(node.getChildren().size() != 2){
+                Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Array access must have 2 children");
+                reports.add(report);
+            }
             JmmNode child = node.getChildren().get(0);
             JmmNode index = node.getChildren().get(1);
             Type childType = (Type) child.getObject("type");
@@ -102,11 +106,10 @@ public class JmmAnalysisImpl implements JmmAnalysis {
                 Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Cannot access array");
                 reports.add(report);
             }
-            if (!indexType.getName().equals("int")) {
+            if (!indexType.getName().equals("int") || indexType.isArray()) {
                 Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Array index must be of type int");
                 reports.add(report);
             }
-
         }
         for (JmmNode child_ : node.getChildren()) {
             verifyArrayAccess(child_, reports);

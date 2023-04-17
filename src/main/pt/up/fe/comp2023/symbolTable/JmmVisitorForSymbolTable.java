@@ -44,11 +44,11 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
     }
 
     private String dealWithArrayAccess(JmmNode jmmNode, String s) {
-        String arrayName = visit(jmmNode.getJmmChild(0),"");
+String arrayName = visit(jmmNode.getJmmChild(0),"");
         String index = visit(jmmNode.getJmmChild(1),"");
-        jmmNode.put("index",index);
-        jmmNode.put("var",arrayName);
-        return arrayName + "[" + index + "]";
+        String code = "\t\t" + arrayName + " = " + arrayName + "[" + index + "];\n";
+        jmmNode.putObject("type",new Type("int",false));
+        return code;
     }
 
     private String dealWithIfStatement(JmmNode jmmNode, String s) {
