@@ -34,9 +34,9 @@ public class OllirVisitorForJasmin{
         this.className = classUnit.getClassName();
         result.append(".super ");
         if (classUnit.getSuperClass() == null){
-            result.append("java/lang/Object\n\n");
+            result.append("java/lang/Object\n");
         } else {
-            result.append(classUnit.getSuperClass()).append("\n\n");
+            result.append(classUnit.getSuperClass()).append("\n");
         }
         return result;
     }
@@ -71,7 +71,7 @@ public class OllirVisitorForJasmin{
     public StringBuilder visitMethods(ClassUnit classUnit) {
         StringBuilder result = new StringBuilder();
         for (Method method : classUnit.getMethods()) {
-            result.append(visitMethod(method)).append("\n");
+            result.append(visitMethod(method));
         }
         return result;
     }
