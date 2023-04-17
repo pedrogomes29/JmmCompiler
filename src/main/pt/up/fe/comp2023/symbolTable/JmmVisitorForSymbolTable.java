@@ -333,7 +333,7 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
 
     private String dealWithNegation (JmmNode jmmNode, String s){
         JmmNode child = jmmNode.getJmmChild(0);
-        jmmNode.putObject("type",new Type("bool",false));
+        jmmNode.putObject("type",new Type("boolean",false));
         return visit(child);
     }
 
@@ -343,7 +343,7 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
                 Objects.equals(jmmNode.get("op"), "/") || Objects.equals(jmmNode.get("op"), "*"))
             type = "int";
         else if (Objects.equals(jmmNode.get("op"), "&&") || Objects.equals(jmmNode.get("op"), "<") )
-            type = "bool";
+            type = "boolean";
 
         jmmNode.putObject("type",new Type(type,false));
 
@@ -375,7 +375,7 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
     }
 
     private String dealWithBoolean (JmmNode jmmNode, String s){
-        jmmNode.putObject("type",new Type("bool",false));
+        jmmNode.putObject("type",new Type("boolean",false));
         return "";
     }
 
