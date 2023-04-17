@@ -1,3 +1,5 @@
+import io;
+
 Test {
 
 	.construct Test().V {
@@ -5,6 +7,10 @@ Test {
 	}
 
 	.method public static main(args.array.String).V {
+        test.Test :=.Test new(Test).Test;
+		invokespecial(test.Test,"<init>").V;
+	    c.i32 :=.i32 invokevirtual(test.Test, "foo").i32;
+	    invokestatic(io, "println", c.i32).V;
 		ret.V;
 	}
 

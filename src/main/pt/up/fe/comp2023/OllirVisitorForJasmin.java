@@ -231,7 +231,15 @@ public class OllirVisitorForJasmin{
             case invokestatic -> result.append(visitInvokeStatic(callInstruction, localVariableIndices));
             case invokevirtual -> result.append(visitInvokeVirtual(callInstruction, localVariableIndices));
         }
-        result.append("\t").append(callInstruction.getInvocationType().toString().toLowerCase()).append(" ").append(classType.getName());
+        result.append("\t").append(callInstruction.getInvocationType().toString().toLowerCase()).append(" ");
+        if (firstArg.getName().equals("this")){
+            result.append(firstArg.getName());
+        } else if (localVariableIndices.containsKey(firstArg.getName())) {
+            result.append(classType.getName());
+        } else {
+            result.append(firstArg.getName());
+        }
+
         if (callInstruction.getSecondArg() != null) {
             result.append("/").append(((LiteralElement) callInstruction.getSecondArg()).getLiteral().toString().replaceAll("\"",""));
         }
