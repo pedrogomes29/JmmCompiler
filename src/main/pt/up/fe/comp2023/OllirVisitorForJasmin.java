@@ -71,7 +71,7 @@ public class OllirVisitorForJasmin{
     public StringBuilder visitMethods(ClassUnit classUnit) {
         StringBuilder result = new StringBuilder();
         for (Method method : classUnit.getMethods()) {
-            result.append(visitMethod(method));
+            result.append(visitMethod(method)).append("\n");
         }
         return result;
     }
