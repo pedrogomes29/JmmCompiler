@@ -199,10 +199,21 @@ public class OllirVisitorForJasmin{
 
     public StringBuilder visitBinaryOpInstruction(BinaryOpInstruction operation, HashMap<String,Integer> localVariableIndices){
         StringBuilder result = new StringBuilder();
-        Operand leftOperand = (Operand) operation.getLeftOperand();
-        Operand rightOperand = (Operand) operation.getRightOperand();
-        result.append(visitOperand(leftOperand, localVariableIndices));
-        result.append(visitOperand(rightOperand, localVariableIndices));
+        Element leftElement = operation.getLeftOperand();
+        Element rightElement = operation.getRightOperand();
+        if (leftElement.isLiteral()){
+            jasmincodeForIntegerVariable(result, Integer.valueOf(((LiteralElement) leftElement).getLiteral()));
+        } else {
+            Operand leftOperand = (Operand) operation.getLeftOperand();
+            result.append(visitOperand(leftOperand, localVariableIndices));
+        }
+
+        if (rightElement.isLiteral()) {
+            jasmincodeForIntegerVariable(result, Integer.valueOf(((LiteralElement) rightElement).getLiteral()));
+        } else {
+            Operand rightOperand = (Operand) operation.getRightOperand();
+            result.append(visitOperand(rightOperand, localVariableIndices));
+        }
 
         OperationType opType = operation.getOperation().getOpType();
         if (opType.equals(ADD)){
