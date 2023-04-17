@@ -5,8 +5,8 @@ class myClass {
     int a;
     public int test() {
         int[] b;
-        boolean c;
-        c = true;
+        int c;
+        c = 2;
         b = new int[2];
         b[c] = 1;
         return b[0];

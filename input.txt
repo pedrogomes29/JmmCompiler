@@ -3,11 +3,14 @@ import a;
 
 class myClass {
     int a;
-    public int test(boolean x) {
-        return this.test(utils.f(5));
-
+    public int test() {
+        int[] b;
+        int c;
+        c = 2;
+        b = new int[2];
+        b[c] = 1;
+        return b[0];
     }
     public static void main(String[] args) {
-
     }
 }

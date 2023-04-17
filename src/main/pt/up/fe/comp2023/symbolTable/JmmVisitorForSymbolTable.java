@@ -61,6 +61,8 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
                 throw new RuntimeException("Array not found");
             }
         }
+        visit(jmmNode.getJmmChild(0),"");
+        visit(jmmNode.getJmmChild(1),"");
          JmmNode index = jmmNode.getJmmChild(0);
          JmmNode value = jmmNode.getJmmChild(1);
         if (!index.getObject("type").equals(new Type("int",false))){
@@ -528,6 +530,7 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
 
 
     private String dealWithArrayConstructor(JmmNode jmmNode, String s) {
+        visit(jmmNode.getJmmChild(0));
         jmmNode.putObject("type", new Type("int",true));
         return "";
     }
