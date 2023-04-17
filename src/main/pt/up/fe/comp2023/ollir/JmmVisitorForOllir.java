@@ -265,15 +265,17 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
         JmmNode rightNode = jmmNode.getJmmChild(1);
 
         String temp_var;
-        temp_var= symbolTable.getNewVariable();
 
 
         String type = JmmOptimizationImpl.typeToOllir((Type)jmmNode.getObject("type"));
         jmmNode.put("type",type);
-        jmmNode.put("var", String.format("%s.%s", temp_var, type));
 
         String leftOperandCode = visit(leftNode);
         String rightOperandCode = visit(rightNode);
+
+        temp_var= symbolTable.getNewVariable();
+        jmmNode.put("var", String.format("%s.%s", temp_var, type));
+
 
         if (isLiteralOrFunctionVariable(leftNode) && isLiteralOrFunctionVariable(rightNode)) {
             jmmNode.put("previousCode", "");
