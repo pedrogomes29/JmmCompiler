@@ -83,7 +83,7 @@ public class JmmAnalysisImpl implements JmmAnalysis {
                 Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Incompatible types " + childType + " and " + assignmentType + " for assignment");
                 reports.add(report);
             }
-            if (!childType.equals(assignmentType) && (assignmentType.equals("int") || assignmentType.equals("bool") || assignmentType.equals("int[]"))){
+            if (!childType.equals(assignmentType) && (assignmentType.equals("int") || assignmentType.equals("boolean") || assignmentType.equals("int[]"))){
                 Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Incompatible types " + childType + " and " + assignmentType + " for assignment");
                 reports.add(report);
             }
