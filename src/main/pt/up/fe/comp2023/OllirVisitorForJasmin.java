@@ -116,6 +116,8 @@ public class OllirVisitorForJasmin{
                 result.append("I").append("\n");
             } else if (method.getReturnType().getTypeOfElement().name().equals("VOID")) {
                 result.append("V").append("\n");
+            } else if (method.getReturnType().getTypeOfElement().equals("CLASS")) {
+                result.append("L").append("\n");
             }
 
 
@@ -266,6 +268,8 @@ public class OllirVisitorForJasmin{
                 result.append("I");
             } else if (e.getType().getTypeOfElement().equals(BOOLEAN)){
                 result.append("Z");
+            } else if (e.getType().getTypeOfElement().equals(CLASS)){
+                result.append("L");
             }
         }
 
@@ -278,6 +282,8 @@ public class OllirVisitorForJasmin{
             result.append("I");
         } else if (callInstruction.getReturnType().getTypeOfElement().equals(BOOLEAN)){
             result.append("Z");
+        } else if (callInstruction.getReturnType().getTypeOfElement().equals(CLASS)){
+            result.append("L");
         }
         result.append("\n");
 
@@ -298,12 +304,13 @@ public class OllirVisitorForJasmin{
             Integer value = Integer.parseInt(((LiteralElement) returnIntruction.getOperand()).getLiteral());
             jasmincodeForIntegerVariable(result, value);
         } else {
-            String localVariableName = ((Operand)returnIntruction.getOperand()).getName();
+            Operand returnInstructionOperand = ((Operand)returnIntruction.getOperand());
+            String localVariableName = returnInstructionOperand.getName();
             int localVariableIdx;
-            if (!localVariableIndices.containsKey(localVariableName)){
-                localVariableIdx = localVariableIndices.size() + 1;
-                localVariableIndices.put(localVariableName, localVariableIdx);
-                result.append(legalizeInstruction("\tiload",localVariableIdx)).append("\n");
+            if (returnInstructionOperand.getType().getTypeOfElement().equals(OBJECTREF)){
+                result.append(legalizeInstruction("\taload",localVariableIndices.get(returnInstructionOperand.getName()))).append("\n");
+            } else if (returnInstructionOperand.getType().getTypeOfElement().equals(THIS)){
+                result.append("\taload_0\n");
             } else {
                 localVariableIdx = localVariableIndices.get(localVariableName);
                 result.append(legalizeInstruction("\tiload",localVariableIdx)).append("\n");
