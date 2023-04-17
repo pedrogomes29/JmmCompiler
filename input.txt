@@ -2,19 +2,21 @@ import io;
 
 class myClass {
 
-	int a;
+	myClass a;
+	int x;
 
-	public int get(){
+	public myClass get(){
  		return a;
 	}
+
 
     public int add(int x, int y){
         return x + y;
     }
 
-	public int m1(){
-	    a=4;
-		return (1+3)/5*this.add(this.get(),this.get());
+	public myClass m1(){
+        a = (new myClass()).get();
+		return a.get();
 	}
 
 	public static void main(String[] args){

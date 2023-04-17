@@ -4,10 +4,8 @@ import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.ast.AJmmVisitor;
 import pt.up.fe.comp.jmm.ast.JmmNode;
-import pt.up.fe.comp2023.ollir.JmmOptimizationImpl;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
 
@@ -353,8 +351,15 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
     }
 
     private String dealWithGrouping(JmmNode jmmNode,String s){
-        jmmNode.putObject("type",jmmNode.getJmmParent().getObject("type"));
-        return visitAllChildren(jmmNode,"");
+        visitAllChildren(jmmNode,"");
+        JmmNode child = jmmNode.getJmmChild(0);
+        if(Objects.equals(child.getKind(), "MethodCall"))
+            jmmNode.putObject("type",jmmNode.getJmmParent().getObject("type"));
+        else{
+            for(String attribute: child.getAttributes())
+                jmmNode.putObject(attribute,child.getObject(attribute));
+        }
+        return "";
     }
 
     private String dealWithExpressionStatement(JmmNode jmmNode,String s){
@@ -377,9 +382,15 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
 
 
     private String dealWithConstructor (JmmNode jmmNode, String s){
-        String className = jmmNode.get("className");
+        String className = symbolTable.getClassName();
         jmmNode.putObject("type", new Type(className,false));
+        jmmNode.put("import","false");
+        jmmNode.put("param","false");
+        jmmNode.put("field","false");
+        jmmNode.put("localVar","false");
+        jmmNode.put("offset","0");
         return "";
+
     }
 
     private  String dealWithThis (JmmNode jmmNode, String s) {
