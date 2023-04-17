@@ -2,10 +2,12 @@ import utils;
 import a;
 
 class myClass {
-    public int foo() {
-        bool a;
-        a = new int[10];
-        a[1] = 2;
+    int a;
+    public int test() {
         return 2;
+    }
+    public static void main(String[] args) {
+        int a;
+        a = this.test();
     }
 }
