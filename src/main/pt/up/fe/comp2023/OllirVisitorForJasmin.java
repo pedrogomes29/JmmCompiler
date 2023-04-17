@@ -366,13 +366,17 @@ public class OllirVisitorForJasmin{
             result.append(legalizeInstruction("\taload",localVariableIndices.get(((Operand)callInstruction.getFirstArg()).getName()))).append("\n");
         }
         for (Element operand: callInstruction.getListOfOperands()){
-            Operand op = (Operand) operand;
-            if (op.getType().getTypeOfElement().equals(OBJECTREF)){
-                result.append(legalizeInstruction("\taload",localVariableIndices.get(op.getName()))).append("\n");
-            } else if (firstOperand.getType().getTypeOfElement().equals(THIS)){
-                result.append("\taload_0\n");
+            if (operand.isLiteral()){
+                jasmincodeForIntegerVariable(result, Integer.valueOf(((LiteralElement) operand).getLiteral()));
             } else {
-                result.append(legalizeInstruction("\tiload",localVariableIndices.get(op.getName()))).append("\n");
+                Operand op = (Operand) operand;
+                if (op.getType().getTypeOfElement().equals(OBJECTREF)) {
+                    result.append(legalizeInstruction("\taload", localVariableIndices.get(op.getName()))).append("\n");
+                } else if (firstOperand.getType().getTypeOfElement().equals(THIS)) {
+                    result.append("\taload_0\n");
+                } else {
+                    result.append(legalizeInstruction("\tiload", localVariableIndices.get(op.getName()))).append("\n");
+                }
             }
         }
         return result;
