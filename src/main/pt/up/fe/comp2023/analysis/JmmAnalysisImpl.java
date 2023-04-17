@@ -13,6 +13,7 @@ import pt.up.fe.comp.jmm.analysis.table.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 public class JmmAnalysisImpl implements JmmAnalysis {
     @Override
@@ -39,8 +40,27 @@ public class JmmAnalysisImpl implements JmmAnalysis {
         verifyArrayAccess(rootNode, reports);
         verifyArguments(rootNode, symbolTable, reports);
         verifyReturn(rootNode, symbolTable, reports);
+        verifyFields(rootNode, symbolTable, reports);
         return new JmmSemanticsResult(jmmParserResult, symbolTable, reports);
     }
+
+    private void verifyFields(JmmNode node, JmmSymbolTable symbolTable, List<Report> reports) {
+        if(Objects.equals(node.getKind(), "Identifier")) {
+            String varName = (String) node.get("value");
+            Optional<JmmNode> staticMethodNode = node.getAncestor("StaticMethod");
+            List<Symbol> fields = symbolTable.getFields();
+            if (staticMethodNode.isPresent()) {
+                for (Symbol field : fields) {
+                    if (Objects.equals(field.getName(), varName)) {
+                        Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Cannot access non-static field " + varName + " from static context");
+                        reports.add(report);
+                    }
+                }
+            }
+
+        }
+    }
+
     private void verifyIdentifiers(JmmNode node, JmmSymbolTable symbolTable, List<Report> reports) {
         if (Objects.equals(node.getKind(), "Identifier")) {
             String name = (String) node.get("value");
@@ -84,6 +104,17 @@ public class JmmAnalysisImpl implements JmmAnalysis {
     }
     private void verifyAssignments(JmmNode node, JmmSymbolTable symbolTable, List<Report> reports) {
         if (Objects.equals(node.getKind(), "Assignment")) {
+            String varName = node.get("varName");
+            Optional<JmmNode> staticMethodNode = node.getAncestor("StaticMethod");
+            List<Symbol> fields = symbolTable.getFields();
+            if (staticMethodNode.isPresent()) {
+                for (Symbol field : fields) {
+                    if (Objects.equals(field.getName(), varName)) {
+                        Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Cannot access non-static field " + varName + " from static context");
+                        reports.add(report);
+                    }
+                }
+            }
             JmmNode child = node.getChildren().get(0);
             String childType = ((Type) child.getObject("type")).getName();
             String assignmentType = ((Type) node.getObject("type")).getName();
