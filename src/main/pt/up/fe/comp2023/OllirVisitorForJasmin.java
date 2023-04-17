@@ -104,7 +104,7 @@ public class OllirVisitorForJasmin{
                 } else if (arg.getType().getTypeOfElement().name().equals("ARRAYREF")) {
                     result.append("[Ljava/lang/String;");
                 } else if (arg.getType().getTypeOfElement().name().equals("OBJECTREF")) {
-                    result.append("L").append(((ClassType) arg.getType()).getName()).append(";\n");
+                    result.append("L").append(((ClassType) arg.getType()).getName()).append(";");
                 }
                 if (!arg.getType().getTypeOfElement().name().equals("ARRAYREF")) {
                     localVariableIndices.put(((Operand) arg).getName(), localVariableIndices.size() + 1);
