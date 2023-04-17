@@ -360,7 +360,16 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
     }
 
     private String dealWithAssignment(JmmNode jmmNode, String s){
+        Optional<JmmNode> staticMethodNode = jmmNode.getAncestor("StaticMethod");
+        List<Symbol> fields = symbolTable.getFields();
         String varName = jmmNode.get("varName");
+        if (staticMethodNode.isPresent()) {
+            for (Symbol field : fields) {
+                if (Objects.equals(field.getName(), varName)) {
+                    throw new RuntimeException("Cannot access a field from a static method");
+                }
+            }
+        }
         String typeString = dealWithId(jmmNode,varName);
         Boolean isArray=false;
         if (typeString.endsWith("[]")) {
