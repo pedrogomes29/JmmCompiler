@@ -106,8 +106,14 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         else
             symbolTable.setSuper(null);
 
+        jmmNode.putObject("methodStatements",new ArrayList<>());
         for ( JmmNode child : jmmNode.getChildren()){
             visit(child,"");
+        }
+        List<JmmNode> methodStatements = (List<JmmNode>)jmmNode.getObject("methodStatements");
+
+        for(JmmNode methodStatement:methodStatements){
+            visit(methodStatement,"");
         }
         return "";
     }
@@ -144,8 +150,18 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
 
         for (;index<jmmNode.getNumChildren();index++){
             JmmNode child = jmmNode.getJmmChild(index);
-            visit(child,"");
+            if(!Objects.equals(child.getKind(), "VarDeclaration"))
+                break;
+            else
+                visit(child,"");
         }
+
+        List<JmmNode> methodStatements = (List<JmmNode>)jmmNode.getJmmParent().getObject("methodStatements");
+        for (;index<jmmNode.getNumChildren();index++){
+            JmmNode child = jmmNode.getJmmChild(index);
+            methodStatements.add(child);
+        }
+        jmmNode.getJmmParent().putObject("methodStatements",methodStatements);
         return "";
     }
 
@@ -162,11 +178,21 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
 
         symbolTable.addParameters(functionName,new Symbol(new Type("String",true),argumentName));
         symbolTable.setIsStatic(functionName,true);
-
-        for (JmmNode child:jmmNode.getChildren()){
-            visit(child,"");
+        int index = 0;
+        for (;index<jmmNode.getNumChildren();index++){
+            JmmNode child = jmmNode.getJmmChild(index);
+            if(!Objects.equals(child.getKind(), "VarDeclaration"))
+                break;
+            else
+                visit(child,"");
         }
 
+        List<JmmNode> methodStatements = (List<JmmNode>)jmmNode.getJmmParent().getObject("methodStatements");
+        for (;index<jmmNode.getNumChildren();index++){
+            JmmNode child = jmmNode.getJmmChild(index);
+            methodStatements.add(child);
+        }
+        jmmNode.getJmmParent().putObject("methodStatements",methodStatements);
         return "";
     }
 
