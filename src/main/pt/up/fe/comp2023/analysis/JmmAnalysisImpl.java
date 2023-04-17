@@ -48,7 +48,6 @@ public class JmmAnalysisImpl implements JmmAnalysis {
         if(Objects.equals(node.getKind(), "Identifier")) {
             String varName = (String) node.get("value");
             Optional<JmmNode> staticMethodNode = node.getAncestor("StaticMethod");
-            List<Symbol> fields = symbolTable.getFields();
             if (staticMethodNode.isPresent() && Objects.equals(node.get("field"), "true")) {
                 Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Cannot access non-static variable " + varName + " from a static context");
                 reports.add(report);
@@ -103,7 +102,6 @@ public class JmmAnalysisImpl implements JmmAnalysis {
         if (Objects.equals(node.getKind(), "Assignment")) {
             String varName = node.get("varName");
             Optional<JmmNode> staticMethodNode = node.getAncestor("StaticMethod");
-            List<Symbol> fields = symbolTable.getFields();
             if (staticMethodNode.isPresent() && Objects.equals(node.get("field"), "true")) {
                 Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Cannot access non-static variable " + varName + " from a static context");
                 reports.add(report);
