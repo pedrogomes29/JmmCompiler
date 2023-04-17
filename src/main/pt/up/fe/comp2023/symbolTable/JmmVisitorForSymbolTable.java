@@ -61,11 +61,19 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
                 throw new RuntimeException("Array not found");
             }
         }
-        String index = visit(jmmNode.getJmmChild(0),"value");
-        String value = visit(jmmNode.getJmmChild(1),"value");
+         JmmNode index = jmmNode.getJmmChild(0);
+         JmmNode value = jmmNode.getJmmChild(1);
+        if (!index.getObject("type").equals(new Type("int",false))){
+            throw new RuntimeException("Array index must be an integer");
+        }
+        if (!value.getObject("type").equals(new Type("int",false))){
+            throw new RuntimeException("Array value must be an integer");
+        }
         jmmNode.putObject("type",new Type("int",false));
         jmmNode.putObject("array",arrayName);
-        return "\t\t" + arrayName + "[" + index + "] = " + value + ";\n";
+        String indexName = index.get("value");
+        String valueName = value.get("value");
+        return "\t\t" + arrayName + "[" + indexName + "] = " + valueName + ";\n";
     }
 
     private String dealWithArrayAccess(JmmNode jmmNode, String s) {

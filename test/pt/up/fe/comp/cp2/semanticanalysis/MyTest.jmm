@@ -4,9 +4,13 @@ import a;
 class myClass {
     int a;
     public int test() {
-        return 2;
+        int[] b;
+        boolean c;
+        c = true;
+        b = new int[2];
+        b[c] = 1;
+        return b[0];
     }
     public static void main(String[] args) {
-        a = 4;
     }
 }
