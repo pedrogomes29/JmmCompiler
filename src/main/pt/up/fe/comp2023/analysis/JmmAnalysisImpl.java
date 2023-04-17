@@ -18,7 +18,16 @@ public class JmmAnalysisImpl implements JmmAnalysis {
     public JmmSemanticsResult semanticAnalysis(JmmParserResult jmmParserResult) {
 
         JmmNode rootNode = jmmParserResult.getRootNode();
-        JmmSymbolTable symbolTable = new JmmSymbolTable(rootNode);
+        JmmSymbolTable symbolTable;
+        try {
+            symbolTable = new JmmSymbolTable(rootNode);
+        }
+        catch (Exception e) {
+            Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, e.getMessage());
+            List<Report> reports = new ArrayList<>();
+            reports.add(report);
+            return new JmmSemanticsResult(jmmParserResult, null, reports);
+        }
         System.out.println(rootNode.toTree());
         // Type verification
         List<Report> reports = new ArrayList<>();
@@ -75,8 +84,6 @@ public class JmmAnalysisImpl implements JmmAnalysis {
             JmmNode child = node.getChildren().get(0);
             String childType = ((Type) child.getObject("type")).getName();
             String assignmentType = ((Type) node.getObject("type")).getName();
-            //falta ver se são arrays int[] y;int x = y
-            //int y; int[]x = y;
             String className = symbolTable.getClassName();
             String superClassName = symbolTable.getSuper();
             if (assignmentType.equals(className) && !childType.equals(className) && (!childType.equals(superClassName))) {
@@ -84,6 +91,12 @@ public class JmmAnalysisImpl implements JmmAnalysis {
                 reports.add(report);
             }
             if (!childType.equals(assignmentType) && (assignmentType.equals("int") || assignmentType.equals("boolean") || assignmentType.equals("int[]"))){
+                Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Incompatible types " + childType + " and " + assignmentType + " for assignment");
+                reports.add(report);
+            }
+            //falta ver se são arrays int[] y;int x = y
+            //int y; int[]x = y;
+            if (assignmentType.equals("int[]") && !childType.equals("int[]")) {
                 Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Incompatible types " + childType + " and " + assignmentType + " for assignment");
                 reports.add(report);
             }

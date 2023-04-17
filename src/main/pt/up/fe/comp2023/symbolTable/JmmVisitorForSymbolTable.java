@@ -174,6 +174,9 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
                 returnType = (Type) jmmNode.getJmmParent().getObject("type");
             }
             else{
+                if(!symbolTable.getMethods().contains(methodName)){
+                    throw new RuntimeException("Method " + methodName + " not found");
+                }
                 returnType = symbolTable.getReturnType(methodName);
                 isStatic = symbolTable.methodIsStatic(methodName);
             }
