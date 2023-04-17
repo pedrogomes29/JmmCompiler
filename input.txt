@@ -1,16 +1,18 @@
-import utils;
+import io;
 
-class myClass {
+class CompileMethodInvocation {
 
-    int x;
+    public static void main(String[] args) {
 
-    public int test(){
-        int x;
-        x = utils.f(5);
-        return 2;
     }
 
-    public static void main(String[] args){
-        x = this.test();
+    public int foo() {
+        int a;
+
+        a = 1;
+
+        io.println(a);
+
+        return 0;
     }
 }

@@ -62,12 +62,6 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         return "\t\tif " + condition + " {\n" + ifCode + "\t\t}\n" + elseCode;
     }
 
-    private Boolean isLiteralOrFunctionVariable(JmmNode jmmNode){
-        return Objects.equals(jmmNode.getKind(), "Integer") || Objects.equals(jmmNode.getKind(), "Boolean") || Objects.equals(jmmNode.getKind(), "This") || (Objects.equals(jmmNode.getKind(), "Identifier") && Objects.equals(jmmNode.get("field"), "false"));
-    }
-    private Boolean isConstructor(JmmNode jmmNode){
-        return Objects.equals(jmmNode.getKind(), "Constructor");
-    }
 
     private String dealWithProgram (JmmNode jmmNode , String s) {
 
@@ -107,13 +101,12 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         }
 
         Type returnType = new Type(type,isArray);
-        String ollirReturnType = JmmOptimizationImpl.typeToOllir(returnType);
         symbolTable.setReturnType(functionName,returnType);
         symbolTable.setLocalVariables(functionName,new ArrayList<>());
         symbolTable.setParameters(functionName,new ArrayList<>());
         symbolTable.setIsStatic(functionName,false);
 
-        jmmNode.put("type", ollirReturnType);
+        jmmNode.putObject("type", returnType);
 
 
         int index=1;
@@ -124,119 +117,13 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
             symbolTable.addParameters(functionName,new Symbol(new Type(type,isArray),argumentName));
             index++;
         }
-        StringBuilder methodCode = new StringBuilder();
+
         for (;index<jmmNode.getNumChildren();index++){
             JmmNode child = jmmNode.getJmmChild(index);
-            String childCode = visit(child,"");
-            if(index==jmmNode.getNumChildren()-1) {
-                if(isLiteralOrFunctionVariable(child)) {
-                    methodCode.append("\t\tret.").append(ollirReturnType)
-                                .append(" ").append(childCode).append(";\n");
-                }
-                else
-                    methodCode.append(childCode).append("\t\t").append("ret").append(".").append(ollirReturnType).append(" ").
-                            append(child.get("var")).append(";\n");
-            }
-            else
-                methodCode.append(childCode);
+            visit(child,"");
         }
-
-        symbolTable.setMethodOllirCode(functionName,methodCode.toString());
         return "";
     }
-
-    private String dealWithMethodCall(JmmNode jmmNode, String s){
-        List<JmmNode> children = jmmNode.getChildren();
-        String methodName = jmmNode.get("methodName");
-        JmmNode objectWithMethod = children.get(0);
-        String objectWithMethodCode = visit(objectWithMethod);
-        StringBuilder methodCallCode = new StringBuilder();
-        List<String> arguments = new ArrayList<>();
-
-        if(!isLiteralOrFunctionVariable((objectWithMethod)))
-            methodCallCode.append(objectWithMethodCode);
-
-
-        boolean isStatic = true;
-        String returnType = null;
-
-        if(objectWithMethod.get("import").equals("true")){ //imported class static method
-            returnType = jmmNode.getJmmParent().get("type");
-
-        }
-        else {
-            jmmNode.put("import","false"); //result of method call can never be a static reference to a class
-            boolean isImported = false;
-            String[] splitedList = objectWithMethod.get("var").split("\\.");
-            String className = splitedList[splitedList.length - 1];
-            for (String imported_class : symbolTable.getImports()) {
-                if (Objects.equals(imported_class, className)) {
-                    isStatic = false;
-                    isImported = true; //imported class normal method
-                    break;
-                }
-            }
-
-            if(isImported)
-                returnType = jmmNode.getJmmParent().get("type");
-            else{
-                isStatic = symbolTable.methodIsStatic(methodName);
-                returnType = JmmOptimizationImpl.typeToOllir(symbolTable.getReturnType(methodName));
-            }
-        }
-        jmmNode.put("type",returnType);
-
-
-        for(JmmNode argument:children.subList(1,children.size())) {
-            String argumentCode = visit(argument);
-
-            if(!isLiteralOrFunctionVariable(argument)) {
-                methodCallCode.append(argumentCode);
-            }
-            arguments.add(argument.get("var"));
-        }
-
-        jmmNode.put("previousCode",methodCallCode.toString());
-
-        String arguments_call = "";
-        if(arguments.size()>0)
-            arguments_call = ", " + (String)arguments.stream().map((dir) -> {
-                return dir;
-            }).collect(Collectors.joining(", "));
-
-
-        if (Objects.equals(returnType, "V")) {
-            if(isStatic)
-                methodCallCode.append("\t\tinvokestatic(");
-            else
-                methodCallCode.append("\t\tinvokevirtual(");
-
-            methodCallCode.append(objectWithMethod.get("var")).append(", \"").append(methodName).append("\"").
-                    append(arguments_call).append(").V;\n");
-            ;
-        } else {
-            String temp_var = symbolTable.getNewVariable();
-            jmmNode.put("var", temp_var + "." + returnType);
-            methodCallCode.append("\t\t").append(temp_var).append(".").append(returnType).append(" :=.").append(returnType).append(" ");
-            StringBuilder rhsCode = new StringBuilder();
-
-            if(isStatic)
-                rhsCode.append("invokestatic(");
-            else
-                rhsCode.append("invokevirtual(");
-
-            rhsCode.append(objectWithMethod.get("var")).append(", \"").append(methodName).append("\"").
-                    append(arguments_call).append(").").append(returnType);
-
-            jmmNode.put("rhsCode", rhsCode.toString());
-            methodCallCode.append(rhsCode);
-            methodCallCode.append(";\n");
-        }
-
-
-        return methodCallCode.toString();
-    }
-
 
     private String dealWithStaticMethod(JmmNode jmmNode , String s) {
         String functionName = jmmNode.get("functionName");
@@ -247,37 +134,84 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         symbolTable.setParameters(functionName,new ArrayList<>());
 
         String argumentName = jmmNode.get("argument");
-
+        jmmNode.putObject("type",new Type("void",false));
 
         symbolTable.addParameters(functionName,new Symbol(new Type("String",true),argumentName));
         symbolTable.setIsStatic(functionName,true);
 
-        StringBuilder methodCode = new StringBuilder();
         for (JmmNode child:jmmNode.getChildren()){
-            String childCode = visit(child,"");
-            methodCode.append(childCode);
+            visit(child,"");
         }
 
-        symbolTable.setMethodOllirCode(functionName,methodCode.toString());
         return "";
     }
-    private  String dealWithVarDeclaration (JmmNode jmmNode, String s){
-        String type = visit(jmmNode.getJmmChild(0),"");
+
+    private String dealWithMethodCall(JmmNode jmmNode, String s){
+        List<JmmNode> children = jmmNode.getChildren();
+        String methodName = jmmNode.get("methodName");
+        JmmNode objectWithMethod = children.get(0);
+        visit(objectWithMethod);
+
+
+        boolean isStatic = true;
+        Type returnType = null;
+
+        if(objectWithMethod.get("import").equals("true")){ //imported class static method
+            returnType = (Type) jmmNode.getJmmParent().getObject("type");
+
+        }
+        else {
+            jmmNode.put("import","false"); //result of method call can never be a static reference to a class
+            boolean isImported = false;
+            String className = ((Type)objectWithMethod.getObject("type")).getName();
+            for (String imported_class : symbolTable.getImports()) {
+                if (Objects.equals(imported_class, className)) {
+                    isImported = true; //imported class normal method
+                    isStatic = false;
+                    break;
+                }
+            }
+
+            if(isImported) {
+                returnType = (Type) jmmNode.getJmmParent().getObject("type");
+            }
+            else{
+                returnType = symbolTable.getReturnType(methodName);
+                isStatic = symbolTable.methodIsStatic(methodName);
+            }
+        }
+        jmmNode.putObject("type",returnType);
+        jmmNode.put("static",isStatic?"true":"false");
+
+        for(JmmNode argument:children.subList(1,children.size())) {
+            visit(argument);
+        }
+
+        return "";
+    }
+
+    private String dealWithVarDeclaration (JmmNode jmmNode, String s){
+        String typeString = visit(jmmNode.getJmmChild(0),"");
         Boolean isArray=false;
-        if (type.endsWith("[]")) {
+        if (typeString.endsWith("[]")) {
             isArray=true;
-            type = type.substring(0, type.length() - 2);
+            typeString = typeString.substring(0, typeString.length() - 2);
         }
 
         JmmNode parent = jmmNode.getJmmParent();
         String parentKind = parent.getKind();
         String varName = jmmNode.get("varName");
 
+
+        Type type = new Type(typeString,isArray);
+        jmmNode.putObject("type",type);
+
+
         if(parentKind.equals("ClassDeclaration")){
-            symbolTable.addField(new Symbol(new Type(type,isArray),jmmNode.get("varName")));
+            symbolTable.addField(new Symbol(type,jmmNode.get("varName")));
         }
         else if(parentKind.equals("NormalMethod") || parentKind.equals("StaticMethod")){
-            symbolTable.addLocalVariables(parent.get("functionName"),new Symbol(new Type(type,isArray),varName));
+            symbolTable.addLocalVariables(parent.get("functionName"),new Symbol(new Type(typeString,isArray),varName));
         }
 
 
@@ -293,37 +227,22 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
 
     private String dealWithIdentifier(JmmNode jmmNode, String s) {
         String varName = jmmNode.get("value");
-        String idCode = dealWithId(jmmNode, varName);
-
-        String[] splitedList = idCode.split("\\.");
-        boolean isArray = false;
-        for (int i = 0; i < splitedList.length-1; i++) {
-            if (splitedList[i].equals("array")) {
-                isArray = true;
-                break;
-            }
+        String typeString = dealWithId(jmmNode,varName);
+        Boolean isArray=false;
+        if (typeString.endsWith("[]")) {
+            isArray=true;
+            typeString = typeString.substring(0, typeString.length() - 2);
         }
 
-        jmmNode.put("isArray", isArray ? "true" : "false"); // Set the isArray attribute based on the result of the check
-        String varType = splitedList[splitedList.length-1];
-        if(Objects.equals(jmmNode.get("field"), "false") && Objects.equals(jmmNode.get("import"), "false"))
-            jmmNode.put("var",varName+"."+varType);
-        else
-            jmmNode.put("var",varName);
-        jmmNode.put("type",varType);
-        jmmNode.put("previousCode",idCode);
-        return idCode;
+        Type type = new Type(typeString,isArray);
+        jmmNode.putObject("type",type);
+        return "";
     }
     private String dealWithId(JmmNode jmmNode,String varName) {
         Optional<JmmNode> methodNode = jmmNode.getAncestor("NormalMethod");
         String methodName;
-        String varType = null;
         Boolean isLocalVar = false;
         Boolean isField = true;
-        Integer param_offset = 0;
-
-
-
 
 
         if (methodNode.isEmpty())
@@ -331,261 +250,159 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
 
         for (String imported_class : symbolTable.getImports()) {
             if (Objects.equals(imported_class, varName)) {
+                jmmNode.putObject("type",new Type(imported_class,false));
                 jmmNode.put("import","true");
-                jmmNode.put("field", "false");
-                jmmNode.put("var",imported_class);
+                jmmNode.put("param","false");
+                jmmNode.put("field","false");
+                jmmNode.put("localVar","false");
+                jmmNode.put("offset","0");
                 return imported_class;
             }
         }
+        jmmNode.put("undeclaredID","true");
+
 
         jmmNode.put("import","false");
-
-
-
-
-
-
         if (methodNode.isPresent()) {
             methodName = methodNode.get().get("functionName");
             List<Symbol> localVars = symbolTable.getLocalVariables(methodName);
             for (Symbol localVar : localVars) {
                 String localVarName = localVar.getName();
                 if (Objects.equals(localVarName, varName)) {
-                    varType = JmmOptimizationImpl.typeToOllir(localVar.getType());
-                    isLocalVar = true;
-                    isField = false;
+                    Type type = localVar.getType();
+                    jmmNode.putObject("type", type);
+                    jmmNode.put("param", "false");
+                    jmmNode.put("field", "false");
+                    jmmNode.put("localVar", "true");
+                    jmmNode.put("offset", "0");
+                    return type.getName() + (type.isArray() ? "[]" : "");
                 }
             }
 
-            if (!isLocalVar) {
-                List<Symbol> parameters = symbolTable.getParameters(methodName);
-                if (!symbolTable.methodIsStatic(methodName))
-                    param_offset = 1;
-                for (int i = 0; i < parameters.size(); i++) {
-                    Symbol paramater = parameters.get(i);
-                    String paramaterName = paramater.getName();
-                    if (Objects.equals(paramaterName, varName)) {
-                        varType = JmmOptimizationImpl.typeToOllir(paramater.getType());
-                        param_offset += i;
-                        isField = false;
-                    }
-                }
-            }
-        }
-
-        if (isField) {
-            List<Symbol> parameters = symbolTable.getFields();
+            List<Symbol> parameters = symbolTable.getParameters(methodName);
+            int param_offset = 0;
+            if (!symbolTable.methodIsStatic(methodName))
+                param_offset = 1;
             for (int i = 0; i < parameters.size(); i++) {
                 Symbol paramater = parameters.get(i);
                 String paramaterName = paramater.getName();
                 if (Objects.equals(paramaterName, varName)) {
-                    varType = JmmOptimizationImpl.typeToOllir(paramater.getType());
+                    Type type = paramater.getType();
+                    jmmNode.putObject("type", type);
+                    jmmNode.put("param", "true");
+                    jmmNode.put("field", "false");
+                    jmmNode.put("localVar", "false");
+                    jmmNode.put("offset", String.valueOf(param_offset + i));
+                    return type.getName() + (type.isArray() ? "[]" : "");
+
                 }
             }
-            jmmNode.put("field", "true");
 
-            if(Objects.equals(jmmNode.getKind(), "Assignment"))
-                return varName + "." + varType;
-            else {
-                String temp_var = symbolTable.getNewVariable();
-                temp_var = String.format("%s.%s", temp_var, varType);
-                jmmNode.put("var", temp_var);
-                return "\t\t" + temp_var + " :=." + varType +
-                        " getfield(this, " + varName + "." + varType + ")." + varType + ";\n";
+            List<Symbol> fields = symbolTable.getFields();
+            for (int i = 0; i < fields.size(); i++) {
+                Symbol paramater = fields.get(i);
+                String paramaterName = paramater.getName();
+                if (Objects.equals(paramaterName, varName)) {
+                    Type type = paramater.getType();
+                    jmmNode.putObject("type", type);
+                    jmmNode.put("param", "false");
+                    jmmNode.put("field", "true");
+                    jmmNode.put("localVar", "false");
+                    jmmNode.put("offset", "0");
+                    return type.getName() + (type.isArray() ? "[]" : "");
+                }
             }
+
         }
-        else {
-            StringBuilder code = new StringBuilder();
-
-            jmmNode.put("field", "false");
-            if (!isLocalVar)
-                code.append("$").append(param_offset).append(".");
-
-
-            code.append(varName).append(".").append(varType);
-
-            return code.toString();
-        }
+        return "";
     }
 
     private String dealWithAssignment(JmmNode jmmNode, String s){
         String varName = jmmNode.get("varName");
-        String idCode = dealWithId(jmmNode,varName);
-        String[] splitedList = idCode.split("\\.");
-        String varType = splitedList[splitedList.length - 1];
-        jmmNode.put("type",varType);
+        String typeString = dealWithId(jmmNode,varName);
+        Boolean isArray=false;
+        if (typeString.endsWith("[]")) {
+            isArray=true;
+            typeString = typeString.substring(0, typeString.length() - 2);
+        }
 
-        StringBuilder code = new StringBuilder();
+        Type type = new Type(typeString,isArray);
+        jmmNode.putObject("type",type);
 
         JmmNode child = jmmNode.getJmmChild(0);
-        String childCode = visit(child);
+        visit(child);
 
-        if(Objects.equals(jmmNode.get("field"), "true")){
-            if (isLiteralOrFunctionVariable(child))
-                code.append("\t\tputfield(this, ").append(idCode).append(", ").append(childCode).append(").V;\n");
-            else
-                code.append(childCode).append("\t\tputfield(this, ").append(idCode).append(", ").append(child.get("var")).append(").V;\n");
-
-        }
-        else {
-            if (isLiteralOrFunctionVariable(child))
-                code.append("\t\t").append(idCode).append(" :=.").append(varType).append(" ").append(childCode).append(";\n");
-            else {
-                symbolTable.decreaseVariable();
-                code.append(child.get("previousCode")).append("\t\t").append(idCode).append(" :=.").append(varType).append(" ").
-                        append(child.get("rhsCode")).append(";\n");
-                if(isConstructor(child)){
-                    code.append("\t\tinvokespecial(").append(idCode).append(",\"<init>\").V;\n");
-                }
-            }
-
-        }
-
-
-        return code.toString();
-
+        return "";
     }
 
     private String dealWithNegation (JmmNode jmmNode, String s){
         JmmNode child = jmmNode.getJmmChild(0);
-        jmmNode.put("type","bool");
-        String childCode = visit(child);
-        String temp_var = symbolTable.getNewVariable();
-       if(isLiteralOrFunctionVariable(child)) {
-           jmmNode.put("previousCode", "");
-           jmmNode.put("rhsCode", String.format("!.bool %s", childCode));
-           return String.format("\t\t%s.bool :=.bool !.bool %s;\n", temp_var, childCode);
-       }
-       else {
-           jmmNode.put("previousCode", childCode);
-           jmmNode.put("rhsCode", String.format("!.bool %s", childCode));
-           return childCode + String.format("\t\t%s.bool :=.bool !.bool %s;\n", temp_var, childCode);       }
+        jmmNode.putObject("type",new Type("bool",false));
+        return visit(child);
     }
 
     private String dealWithBinaryOp(JmmNode jmmNode,String s) {
-        JmmNode leftNode = jmmNode.getJmmChild(0);
-        JmmNode rightNode = jmmNode.getJmmChild(1);
-
-
-
-
-        String temp_var;
-        temp_var= symbolTable.getNewVariable();
-
         String type = null;
         if(Objects.equals(jmmNode.get("op"), "+") || Objects.equals(jmmNode.get("op"), "-") ||
                 Objects.equals(jmmNode.get("op"), "/") || Objects.equals(jmmNode.get("op"), "*"))
-            type = "i32";
+            type = "int";
         else if (Objects.equals(jmmNode.get("op"), "&&") || Objects.equals(jmmNode.get("op"), "<") )
             type = "bool";
 
-        jmmNode.put("type",type);
-        jmmNode.put("var", String.format("%s.%s", temp_var, type));
+        jmmNode.putObject("type",new Type(type,false));
 
-        String leftOperandCode = visit(leftNode);
-        String rightOperandCode = visit(rightNode);
-
-        if (isLiteralOrFunctionVariable(leftNode) && isLiteralOrFunctionVariable(rightNode)) {
-            jmmNode.put("previousCode", "");
-            jmmNode.put("rhsCode", String.format("%s %s.%s %s", leftOperandCode, jmmNode.get("op"), type, rightOperandCode));
-            return String.format("\t\t%s.%s :=.%s %s %s.%s %s;\n", temp_var, type, type, leftOperandCode, jmmNode.get("op"), type, rightOperandCode);
-        } else if (isLiteralOrFunctionVariable(leftNode)) {
-            jmmNode.put("previousCode", rightOperandCode);
-            jmmNode.put("rhsCode", String.format("%s %s.%s %s", leftOperandCode, jmmNode.get("op"), type, rightNode.get("var")));
-            return rightOperandCode + String.format("\t\t%s.%s :=.%s %s %s.%s %s;\n", temp_var, type, type, leftOperandCode, jmmNode.get("op"), type, rightNode.get("var"));
-        } else if (isLiteralOrFunctionVariable(rightNode)) {
-            jmmNode.put("previousCode", leftOperandCode);
-            jmmNode.put("rhsCode", String.format("%s %s.%s %s", leftNode.get("var"), jmmNode.get("op"), type, rightOperandCode));
-            return leftOperandCode + String.format("\t\t%s.%s :=.%s %s %s.%s %s;\n", temp_var, type, type, leftNode.get("var"), jmmNode.get("op"), type, rightOperandCode);
-        } else {
-            jmmNode.put("previousCode", leftOperandCode+rightOperandCode);
-            jmmNode.put("rhsCode", String.format("%s %s.%s %s",leftNode.get("var"), jmmNode.get("op"), type, rightNode.get("var")));
-            return leftOperandCode + rightOperandCode + String.format("\t\t%s.%s :=.%s %s %s.%s %s;\n", temp_var, type, type, leftNode.get("var"), jmmNode.get("op"), type, rightNode.get("var"));
-
-        }
+        return visitAllChildren(jmmNode,"");
     }
 
     private String dealWithGrouping(JmmNode jmmNode,String s){
-        JmmNode child = jmmNode.getJmmChild(0);
-        jmmNode.put("type",jmmNode.getJmmParent().get("type"));
-        String code =  visit(child);
-        for(String attribute: child.getAttributes())
-            jmmNode.put(attribute,child.get(attribute));
-
-        return code;
+        jmmNode.putObject("type",jmmNode.getJmmParent().getObject("type"));
+        return visitAllChildren(jmmNode,"");
     }
 
     private String dealWithExpressionStatement(JmmNode jmmNode,String s){
-        JmmNode child = jmmNode.getJmmChild(0);
-        jmmNode.put("type","V");
-        String code =  visit(child);
-
-        for(String attribute: child.getAttributes())
-            jmmNode.put(attribute,child.get(attribute));
-
-        return code;
+        jmmNode.putObject("type",new Type("void",false));
+        return visitAllChildren(jmmNode,"");
     }
 
 
 
     private String dealWithInteger (JmmNode jmmNode, String s){
-        jmmNode.put("var",jmmNode.get("value")+".i32");
-        jmmNode.put("type","int");
-        jmmNode.put("isArray","false");
-        return jmmNode.get("value")+".i32";
+        jmmNode.putObject("type",new Type("int",false));
+        return "";
     }
 
     private String dealWithBoolean (JmmNode jmmNode, String s){
-        /*
-        String int_conversion_of_bool = null;
-        if(Objects.equals(jmmNode.get("value"), "false"))
-            int_conversion_of_bool = "0";
-        else if (Objects.equals(jmmNode.get("value"), "true"))
-            int_conversion_of_bool = "1";
-
-        jmmNode.put("var",int_conversion_of_bool+".i32");
-        return int_conversion_of_bool+".i32";
-        */
-        jmmNode.put("var",jmmNode.get("value")+".bool");
-        jmmNode.put("type","bool");
-        jmmNode.put("isArray","false");
-        return jmmNode.get("value")+".bool";
+        jmmNode.putObject("type",new Type("bool",false));
+        return "";
     }
 
 
 
     private String dealWithConstructor (JmmNode jmmNode, String s){
         String className = jmmNode.get("className");
-        String temp_var = symbolTable.getNewVariable();
-        jmmNode.put("previousCode", "");
-        jmmNode.put("rhsCode", "new("+className+")." +  className);
-        jmmNode.put("var", temp_var+"."+className);
-        jmmNode.put("type", className);
-
-        return  "\t\t" + temp_var + "." + className + " :=." + className + " new(" + className + ")." + className + ";\n"
-                + "\t\tinvokespecial(" + temp_var+ "." + className+",\"<init>\").V;\n";
-    }
-
-    private  String dealWithThis (JmmNode jmmNode, String s) {
-        jmmNode.put("var", "this");
-        jmmNode.put("import","false");
-        return "this";
-
-    }
-    private  String dealWithDefaultVisit (JmmNode jmmNode, String s){
+        jmmNode.putObject("type", new Type(className,false));
         return "";
     }
 
+    private  String dealWithThis (JmmNode jmmNode, String s) {
+        String className = symbolTable.getClassName();
+        jmmNode.putObject("type", new Type(className,false));
+        jmmNode.put("import","false");
+        jmmNode.put("param","false");
+        jmmNode.put("field","false");
+        jmmNode.put("localVar","false");
+        jmmNode.put("offset","0");
+        return "";
+
+    }
+
+
     private String dealWithArrayConstructor(JmmNode jmmNode, String s) {
-        String temp_var = symbolTable.getNewVariable();
-        String type = "int[]";
-        JmmNode sizeNode = jmmNode.getChildren().get(0);
-        String sizeCode = sizeNode.get("value");
-        jmmNode.put("var", temp_var + "." + type);
-        jmmNode.put("type", type);
-        jmmNode.put("previousCode", "");
-        jmmNode.put("rhsCode", "newarray(" + sizeCode + ")." + type);
-        return "\t" + temp_var + "." + type + " := newarray(" + sizeCode + ")." + type + ";\n";
+        jmmNode.putObject("type", new Type("int",true));
+        return "";
+    }
+    private  String dealWithDefaultVisit (JmmNode jmmNode, String s){
+        return visitAllChildren(jmmNode,s);
     }
 
 }

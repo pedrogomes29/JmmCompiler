@@ -8,7 +8,7 @@ import pt.up.fe.comp.jmm.report.Report;
 import pt.up.fe.comp.jmm.report.ReportType;
 import pt.up.fe.comp.jmm.report.Stage;
 import pt.up.fe.comp2023.symbolTable.JmmSymbolTable;
-
+import pt.up.fe.comp.jmm.analysis.table.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -19,6 +19,7 @@ public class JmmAnalysisImpl implements JmmAnalysis {
 
         JmmNode rootNode = jmmParserResult.getRootNode();
         JmmSymbolTable symbolTable = new JmmSymbolTable(rootNode);
+        System.out.println(rootNode.toTree());
         // Type verification
         List<Report> reports = new ArrayList<>();
         verifyIdentifiers(rootNode, symbolTable, reports);
@@ -44,12 +45,10 @@ public class JmmAnalysisImpl implements JmmAnalysis {
         if (Objects.equals(node.getKind(), "BinaryOp")) {
             JmmNode left = node.getChildren().get(0);
             JmmNode right = node.getChildren().get(1);
-            String leftType = left.get("type");
-            String rightType = right.get("type");
+            Type leftType = (Type)left.getObject("type");
+            Type rightType = (Type)right.getObject("type");
             String op = (String) node.get("op");
-            String isLeftArray = (String) left.get("isArray");
-            String isRightArray = (String) right.get("isArray");
-            if (!areTypesCompatible(leftType, rightType, isLeftArray, isRightArray, op)) {
+            if (!areTypesCompatible(leftType, rightType, op)) {
                 Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Incompatible types " + leftType + " and " + rightType + " for operator " + op);
                 reports.add(report);
             }
@@ -61,7 +60,7 @@ public class JmmAnalysisImpl implements JmmAnalysis {
     private void verifyExpressionsInConditions(JmmNode node, List<Report> reports) {
         if (Objects.equals(node.getKind(), "IfStatement") || Objects.equals(node.getKind(), "WhileStatement")) {
             JmmNode condition = node.getChildren().get(0);
-            String conditionType = condition.get("type");
+            String conditionType = ((Type)condition.getObject("type")).getName();
             if (!conditionType.equals("boolean")) {
                 Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Condition must be of type boolean");
                 reports.add(report);
@@ -74,14 +73,10 @@ public class JmmAnalysisImpl implements JmmAnalysis {
     private void verifyAssignments(JmmNode node, JmmSymbolTable symbolTable, List<Report> reports) {
         if (Objects.equals(node.getKind(), "Assignment")) {
             JmmNode child = node.getChildren().get(0);
-            String childType = child.get("type");
-            String assignmentType = node.get("type");
-            if (childType.equals("i32")) {
-                childType = "int";
-            }
-            if (assignmentType.equals("i32")) {
-                assignmentType = "int";
-            }
+            String childType = ((Type) child.getObject("type")).getName();
+            String assignmentType = ((Type) node.getObject("type")).getName();
+            //falta ver se são arrays int[] y;int x = y
+            //int y; int[]x = y;
             String className = symbolTable.getClassName();
             String superClassName = symbolTable.getSuper();
             if (assignmentType.equals(className) && !childType.equals(className) && (!childType.equals(superClassName))) {
@@ -101,11 +96,13 @@ public class JmmAnalysisImpl implements JmmAnalysis {
         if (Objects.equals(node.getKind(), "ArrayAccess")) {
             JmmNode child = node.getChildren().get(0);
             JmmNode index = node.getChildren().get(1);
-            if (!child.get("isArray").equals("true")) {
+            Type childType = (Type) child.getObject("type");
+            Type indexType = (Type) index.getObject("type");
+            if (!childType.isArray()) {
                 Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Cannot access array");
                 reports.add(report);
             }
-            if (!index.get("type").equals("int") && !index.get("type").equals("i32")) {
+            if (!indexType.getName().equals("int")) {
                 Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Array index must be of type int");
                 reports.add(report);
             }
@@ -116,22 +113,22 @@ public class JmmAnalysisImpl implements JmmAnalysis {
         }
     }
 
-    private boolean areTypesCompatible(String leftType, String rightType, String isLeftArray, String isRightArray, String op) {
-        boolean b = leftType.equals("int") && rightType.equals("int") || leftType.equals("i32") && rightType.equals("i32");
+    private boolean areTypesCompatible(Type leftType, Type rightType, String op) {
+        boolean b = leftType.getName().equals("int") && rightType.getName().equals("int");
         if (op.equals("+") || op.equals("-") || op.equals("*") || op.equals("/")) {
-            return b && isLeftArray.equals("false") && isRightArray.equals("false");
+            return b && !leftType.isArray() && !rightType.isArray();
         }
         if (op.equals("<") || op.equals(">") || op.equals("<=") || op.equals(">=")) {
-            return b && isLeftArray.equals("false") && isRightArray.equals("false");
+            return b && !leftType.isArray() && !rightType.isArray();
         }
         if (op.equals("==") || op.equals("!=")) {
-            return b || (leftType.equals("boolean") && rightType.equals("boolean"));
+            return b || (leftType.getName().equals("boolean") && rightType.getName().equals("boolean"));
         }
         if (op.equals("&&") || op.equals("||")) {
-            return leftType.equals("boolean") && rightType.equals("boolean") && isLeftArray.equals("false") && isRightArray.equals("false");
+            return leftType.getName().equals("boolean") && rightType.getName().equals("boolean") && !leftType.isArray() && !rightType.isArray();
         }
         if (op.equals("=")) {
-            return b || (leftType.equals("boolean") && rightType.equals("boolean"));
+            return b || (leftType.getName().equals("boolean") && rightType.getName().equals("boolean"));
         }
         return false;
     }

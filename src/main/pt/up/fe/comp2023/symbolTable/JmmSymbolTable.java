@@ -38,7 +38,6 @@ public class JmmSymbolTable implements SymbolTable{
         lastUsedVariable = -1;
         JmmVisitorForSymbolTable gen = new JmmVisitorForSymbolTable(this);
         gen.visit(node);
-        System.out.println(this.print());
     }
 
     @Override
