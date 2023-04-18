@@ -209,6 +209,37 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         return "";
     }
 
+    private Type deduceReturnType(JmmNode jmmNode){
+        String methodName = jmmNode.get("methodName");
+        JmmNode parent = jmmNode.getJmmParent();
+        switch (parent.getKind()) {
+            case "ArrayAccess" -> {
+                return new Type("int", false);
+            }
+            case "BinaryOp"->{
+                String op = parent.get("op");
+                if(Objects.equals(op, "&&"))
+                    return new Type("boolean", false);
+                else
+                    return new Type("int", false);
+
+            }
+            case "MethodCall" -> {
+                JmmNode parentObjectWithMethod = parent.getJmmChild(0);
+                if (parentObjectWithMethod.getOptionalObject("type").isPresent() &&
+                        Objects.equals(((Type) parentObjectWithMethod.getObject("type")).getName(), symbolTable.getClassName()) &&
+                        symbolTable.getMethods().contains(parent.get("methodName")))
+                    return symbolTable.getParameters(parent.get("methodName")).get(jmmNode.getIndexOfSelf() - 1).getType();
+                else
+                    throw new RuntimeException("Can't deduce return type of " + methodName);
+
+            }
+            default -> {
+                return (Type) jmmNode.getJmmParent().getObject("type");
+            }
+        }
+    }
+
     private String dealWithMethodCall(JmmNode jmmNode, String s){
         List<JmmNode> children = jmmNode.getChildren();
         String methodName = jmmNode.get("methodName");
@@ -220,22 +251,7 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
 
         if(objectWithMethod.get("import").equals("true")){ //imported class static method
             jmmNode.put("isImported","true");
-            if (jmmNode.getJmmParent().getKind().equals("ArrayAccess"))
-                returnType = new Type("int",false);
-            else if (jmmNode.getJmmParent().getKind().equals("MethodCall")) {
-                JmmNode parent = jmmNode.getJmmParent();
-                JmmNode parentObjectWithMethod= parent.getJmmChild(0);
-                if(parentObjectWithMethod.getOptionalObject("type").isPresent() &&
-                        Objects.equals(((Type) parentObjectWithMethod.getObject("type")).getName(), symbolTable.getClassName()) &&
-                        symbolTable.getMethods().contains(parent.get("methodName")))
-                    returnType = symbolTable.getParameters(parent.get("methodName")).get(jmmNode.getIndexOfSelf()-1).getType();
-                else
-                    throw new RuntimeException("Can't deduce return type of " + methodName);
-
-            }
-            else
-                returnType = (Type) jmmNode.getJmmParent().getObject("type");
-
+            returnType = deduceReturnType(jmmNode);
         }
         else {
             jmmNode.put("import","false");//result of method call can never be a static reference to a class
@@ -253,42 +269,13 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
             }
             if(isImported) {
                 jmmNode.put("isImported","true");
-                if (jmmNode.getJmmParent().getKind().equals("ArrayAccess"))
-                    returnType = new Type("int",false);
-                else if (jmmNode.getJmmParent().getKind().equals("MethodCall")) {
-                    JmmNode parent = jmmNode.getJmmParent();
-                    JmmNode parentObjectWithMethod= parent.getJmmChild(0);
-                    if(parentObjectWithMethod.getOptionalObject("type").isPresent() &&
-                            Objects.equals(((Type) parentObjectWithMethod.getObject("type")).getName(), symbolTable.getClassName()) &&
-                            symbolTable.getMethods().contains(parent.get("methodName")))
-                        returnType = symbolTable.getParameters(parent.get("methodName")).get(jmmNode.getIndexOfSelf()-1).getType();
-                    else
-                        throw new RuntimeException("Can't deduce return type of " + methodName);
-
-                }
-                else
-                    returnType = (Type) jmmNode.getJmmParent().getObject("type");
+                returnType = deduceReturnType(jmmNode);
             }
             else{
                 if(!symbolTable.getMethods().contains(methodName)){
                     if(symbolTable.getSuper()!=null){
                         jmmNode.put("isImported","true");
-                        if (jmmNode.getJmmParent().getKind().equals("ArrayAccess"))
-                            returnType = new Type("int",false);
-                        else if (jmmNode.getJmmParent().getKind().equals("MethodCall")) {
-                            JmmNode parent = jmmNode.getJmmParent();
-                            JmmNode parentObjectWithMethod= parent.getJmmChild(0);
-                            if(parentObjectWithMethod.getOptionalObject("type").isPresent() &&
-                                    Objects.equals(((Type) parentObjectWithMethod.getObject("type")).getName(), symbolTable.getClassName()) &&
-                                    symbolTable.getMethods().contains(parent.get("methodName")))
-                                returnType = symbolTable.getParameters(parent.get("methodName")).get(jmmNode.getIndexOfSelf()-1).getType();
-                            else
-                                throw new RuntimeException("Can't deduce return type of " + methodName);
-
-                        }
-                        else
-                            returnType = (Type) jmmNode.getJmmParent().getObject("type");
-
+                        returnType = deduceReturnType(jmmNode);
                         isStatic = Objects.equals(objectWithMethod.getKind(), "Identifier") && objectWithMethod.get("value")==symbolTable.getClassName();
                     }
                     else
