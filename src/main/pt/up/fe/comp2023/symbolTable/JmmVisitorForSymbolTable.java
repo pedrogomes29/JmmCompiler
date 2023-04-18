@@ -58,9 +58,6 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
                     throw new RuntimeException("Trying to access a non array variable as an array");
                 }
             }
-            else {
-                throw new RuntimeException("Array not found");
-            }
         }
         visit(jmmNode.getJmmChild(0),"");
         visit(jmmNode.getJmmChild(1),"");

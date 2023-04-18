@@ -1,14 +1,22 @@
 class MyClass {
 
-     public int myMethod(int[] a, int b) {
-         int c;
-         c = 2;
-         return c;
-     }
-     public int foo(){
-         this.myMethod(1, 2);
-         return 0;
-     }
-     public static void main(String[] args) {
-     }
+    public static void main(String[] args) {
+
+    }
+
+    public int foo() {
+        int[] a;
+        int[] c;
+        int b;
+        a = new int[2];
+        c = new int[2];
+        b = 0;
+        a[0] = 1;
+        c[0] = 2;
+        while (a[b] < c[b] ) {
+            b = 1;
+        }
+        return 2;
+    }
+
 }
