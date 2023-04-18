@@ -178,6 +178,10 @@ public class JmmAnalysisImpl implements JmmAnalysis {
                         Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Incompatible types " + argumentType + " and " + parameterType + " for argument " + i + " of method " + methodName);
                         reports.add(report);
                     }
+                    if(((Type) argument.getObject("type")).isArray() != ((Type) parameter.getType()).isArray()){
+                        Report report = new Report(ReportType.ERROR, Stage.SEMANTIC, -1, -1, "Incompatible types " + argument.getObject("type") + " and " + parameter.getType() + " for argument " + i + " of method " + methodName);
+                        reports.add(report);
+                    }
                 }
             }
         }

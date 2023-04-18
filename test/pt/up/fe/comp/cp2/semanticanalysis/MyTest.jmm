@@ -1,16 +1,14 @@
-import utils;
-import a;
+class MyClass {
 
-class myClass {
-    int a;
-    public int test() {
-        int[] b;
-        int c;
-        c = 2;
-        b = new int[2];
-        b[c] = 1;
-        return b[0];
-    }
-    public static void main(String[] args) {
-    }
+     public int myMethod(int[] a, int b) {
+         int c;
+         c = 2;
+         return c;
+     }
+     public int foo(){
+         this.myMethod(1, 2);
+         return 0;
+     }
+     public static void main(String[] args) {
+     }
 }
