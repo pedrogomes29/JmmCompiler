@@ -1,16 +1,24 @@
 import utils;
+import a;
 
 class myClass {
-
-    int x;
-
-    public int test(){
-        int x;
-        x = utils.f(5);
-        return 2;
+    int a;
+    public int test() {
+        int[] b;
+        int c;
+        c = 2;
+        b = new int[2];
+        b[c] = 1;
+        while(true){
+            if(b[3]<3){
+                b[3] = c - 1;
+            }
+            else{
+                b[3] = c + 1;
+            }
+        }
+        return b[0];
     }
-
-    public static void main(String[] args){
-        x = this.test();
+    public static void main(String[] args) {
     }
 }

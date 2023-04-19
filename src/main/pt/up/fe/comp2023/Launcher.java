@@ -51,6 +51,7 @@ public class Launcher {
 
         JmmAnalysisImpl jmmAnalysisImpl = new JmmAnalysisImpl();
         JmmSemanticsResult jmmSemanticsResult = jmmAnalysisImpl.semanticAnalysis(parserResult);
+        System.out.println(jmmSemanticsResult.getRootNode().toTree());
         JmmOptimizationImpl jmmOptimizationImpl = new JmmOptimizationImpl();
         OllirResult ollirResult = jmmOptimizationImpl.toOllir(jmmSemanticsResult);
         System.out.println(parserResult.toString());
