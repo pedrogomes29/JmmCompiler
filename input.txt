@@ -2,15 +2,19 @@ import utils;
 
 class myClass {
 
-    int x;
-
-    public int test(){
+    public int test(Integer i) {
         int x;
-        x = utils.f(5);
+        int y;
+        x = 2;
         return 2;
     }
 
-    public static void main(String[] args){
-        x = this.test();
+    public static void main(String[] args) {
+        myClass obj;
+        Integer i;
+        int x;
+        obj = new myClass();
+        i = new Integer();
+        x = obj.test(i);
     }
 }
