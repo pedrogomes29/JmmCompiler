@@ -387,13 +387,17 @@ public class OllirVisitorForJasmin{
         StringBuilder result = new StringBuilder();
         Element firstOperand = callInstruction.getFirstArg();
         for (Element operand: callInstruction.getListOfOperands()){
-            Operand op = (Operand) operand;
-            if (op.getType().getTypeOfElement().equals(OBJECTREF)){
-                result.append(legalizeInstruction("\taload",localVariable.get(op.getName()).getVirtualReg())).append("\n");
-            } else if (firstOperand.getType().getTypeOfElement().equals(THIS)){
-                result.append("\taload_0\n");
+            if (operand.isLiteral()){
+                jasmincodeForIntegerVariable(result,Integer.parseInt(((LiteralElement) operand).getLiteral()));
             } else {
-                result.append(legalizeInstruction("\tiload",localVariable.get(op.getName()).getVirtualReg())).append("\n");
+                Operand op = (Operand) operand;
+                if (op.getType().getTypeOfElement().equals(OBJECTREF)) {
+                    result.append(legalizeInstruction("\taload", localVariable.get(op.getName()).getVirtualReg())).append("\n");
+                } else if (firstOperand.getType().getTypeOfElement().equals(THIS)) {
+                    result.append("\taload_0\n");
+                } else {
+                    result.append(legalizeInstruction("\tiload", localVariable.get(op.getName()).getVirtualReg())).append("\n");
+                }
             }
         }
         return result;
