@@ -291,9 +291,6 @@ public class OllirVisitorForJasmin{
         }
         result.append("\n");
 
-        if (invocationType.equals(NEW)){
-            result.append("\tdup\n");
-        }
 
 
         return result;
