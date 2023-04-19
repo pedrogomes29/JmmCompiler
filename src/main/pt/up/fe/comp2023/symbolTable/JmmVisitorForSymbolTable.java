@@ -58,7 +58,7 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         if (!value.getObject("type").equals(new Type("int",false))){
             throw new RuntimeException("Array value must be an integer");
         }
-        if(jmmNode.getOptional("undeclaredID").isPresent() || jmmNode.get("imported").equals("true")){
+        if(jmmNode.getOptional("undeclaredID").isPresent() || jmmNode.get("import").equals("true")){
             throw new RuntimeException("Array " + arrayName + " is not declared");
         }
         jmmNode.putObject("type",new Type("int",false));
