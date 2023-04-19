@@ -1,22 +1,24 @@
-class MyClass {
+import utils;
+import a;
 
-    public static void main(String[] args) {
-
-    }
-
-    public int foo() {
-        int[] a;
-        int[] c;
-        int b;
-        a = new int[2];
-        c = new int[2];
-        b = 0;
-        a[0] = 1;
-        c[0] = 2;
-        while (a[b] < c[b] ) {
-            b = 1;
+class myClass {
+    int a;
+    public int test() {
+        int[] b;
+        int c;
+        c = 2;
+        b = new int[2];
+        b[c] = 1;
+        while(true){
+            if(b[3]<3){
+                b[3] = c - 1;
+            }
+            else{
+                b[3] = c + 1;
+            }
         }
-        return 2;
+        return b[0];
     }
-
+    public static void main(String[] args) {
+    }
 }

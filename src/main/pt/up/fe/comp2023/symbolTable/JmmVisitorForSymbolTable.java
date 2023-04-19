@@ -63,9 +63,7 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         }
         jmmNode.putObject("type",new Type("int",false));
         jmmNode.putObject("array",arrayName);
-        String indexName = index.get("value");
-        String valueName = value.get("value");
-        return "\t\t" + arrayName + "[" + indexName + "] = " + valueName + ";\n";
+        return "";
     }
 
     private String dealWithArrayAccess(JmmNode jmmNode, String s) {
