@@ -2,7 +2,7 @@ import utils;
 import a;
 
 class myClass {
-<<<<<<< HEAD
+
 
     public int test(Integer i) {
         int x;
@@ -13,30 +13,10 @@ class myClass {
 
     public static void main(String[] args) {
         myClass obj;
-        Integer i;
+        utils.Integer i;
         int x;
         obj = new myClass();
-        i = new Integer();
+        i = new utils.Integer();
         x = obj.test(i);
-=======
-    int a;
-    public int test() {
-        int[] b;
-        int c;
-        c = 2;
-        b = new int[2];
-        b[c] = 1;
-        while(true){
-            if(b[3]<3){
-                b[3] = c - 1;
-            }
-            else{
-                b[3] = c + 1;
-            }
-        }
-        return b[0];
-    }
-    public static void main(String[] args) {
->>>>>>> e018c1ed6cb09d1d029d20b0448cbfc236c377ad
     }
 }

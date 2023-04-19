@@ -6,6 +6,7 @@ import org.specs.comp.ollir.*;
 import javax.print.DocFlavor;
 import java.beans.Statement;
 import java.lang.reflect.Array;
+import java.security.interfaces.ECKey;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -247,12 +248,18 @@ public class OllirVisitorForJasmin{
             case invokespecial -> result.append(visitInvokeSpecial(callInstruction,localVariableIndices));
             case invokestatic -> result.append(visitInvokeStatic(callInstruction, localVariableIndices));
             case invokevirtual -> result.append(visitInvokeVirtual(callInstruction, localVariableIndices));
+            case NEW -> result.append(visitNew(callInstruction,localVariableIndices));
         }
         result.append("\t").append(callInstruction.getInvocationType().toString().toLowerCase()).append(" ");
         if (firstArg.getName().equals("this")){
             result.append(this.className);
         } else if (localVariableIndices.containsKey(firstArg.getName())) {
-            result.append(classType.getName());
+            if (classType.getName() == "Integer"){
+                result.append("java/lang/Integer");
+            }else {
+
+                result.append(classType.getName());
+            }
         } else {
             result.append(firstArg.getName());
         }
@@ -389,6 +396,17 @@ public class OllirVisitorForJasmin{
                 result.append(legalizeInstruction("\tiload",localVariable.get(op.getName()).getVirtualReg())).append("\n");
             }
         }
+        return result;
+    }
+
+    public StringBuilder visitNew(CallInstruction callInstruction, HashMap<String, Descriptor> localVariable){
+        StringBuilder result = new StringBuilder();
+        for (Element element : callInstruction.getListOfOperands()){
+            String name = ((Operand)element).getName();
+            result.append(legalizeInstruction("\taload",localVariable.get(name).getVirtualReg())).append("\n");
+
+        }
+
         return result;
     }
 
