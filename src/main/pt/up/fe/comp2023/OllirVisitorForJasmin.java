@@ -104,7 +104,7 @@ public class OllirVisitorForJasmin{
                 } else if (arg.getType().getTypeOfElement().name().equals("ARRAYREF")) {
                     result.append("[Ljava/lang/String;");
                 } else if (arg.getType().getTypeOfElement().name().equals("OBJECTREF")) {
-                    result.append("Ljava/lang/").append(((ClassType) arg.getType()).getName()).append(";");
+                    result.append("L").append(((ClassType) arg.getType()).getName()).append(";");
                 }
             }
 
@@ -254,12 +254,7 @@ public class OllirVisitorForJasmin{
         if (firstArg.getName().equals("this")){
             result.append(this.className);
         } else if (localVariableIndices.containsKey(firstArg.getName())) {
-            if (classType.getName() == "Integer"){
-                result.append("java/lang/Integer");
-            }else {
-
-                result.append(classType.getName());
-            }
+            result.append(classType.getName());
         } else {
             result.append(firstArg.getName());
         }
@@ -280,7 +275,7 @@ public class OllirVisitorForJasmin{
             } else if (e.getType().getTypeOfElement().equals(BOOLEAN)){
                 result.append("Z");
             } else if (e.getType().getTypeOfElement().equals(OBJECTREF)){
-                result.append("Ljava/lang/").append(((ClassType) e.getType()).getName()).append(";");
+                result.append("L").append(((ClassType) e.getType()).getName()).append(";");
             }
         }
 
@@ -294,7 +289,7 @@ public class OllirVisitorForJasmin{
         } else if (callInstruction.getReturnType().getTypeOfElement().equals(BOOLEAN)){
             result.append("Z");
         } else if (callInstruction.getReturnType().getTypeOfElement().equals(CLASS)){
-            result.append("Ljava/lang/").append(((ClassType) callInstruction.getReturnType()).getName()).append(";");
+            result.append("L").append(((ClassType) callInstruction.getReturnType()).getName()).append(";");
         }
         result.append("\n");
 
