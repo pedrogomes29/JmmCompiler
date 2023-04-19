@@ -14,6 +14,7 @@ import static org.specs.comp.ollir.CallType.NEW;
 import static org.specs.comp.ollir.CallType.invokespecial;
 import static org.specs.comp.ollir.ElementType.*;
 import static org.specs.comp.ollir.InstructionType.ASSIGN;
+import static org.specs.comp.ollir.InstructionType.CALL;
 import static org.specs.comp.ollir.OperationType.*;
 
 public class OllirVisitorForJasmin{
@@ -290,9 +291,7 @@ public class OllirVisitorForJasmin{
         if (invocationType.equals(NEW)){
             result.append("\tdup\n");
         }
-        if (invocationType.equals(invokespecial)) {
-            result.append("\tpop\n");
-        }
+
 
         return result;
     }
