@@ -14,7 +14,6 @@ import static org.specs.comp.ollir.CallType.NEW;
 import static org.specs.comp.ollir.CallType.invokespecial;
 import static org.specs.comp.ollir.ElementType.*;
 import static org.specs.comp.ollir.InstructionType.ASSIGN;
-import static org.specs.comp.ollir.InstructionType.CALL;
 import static org.specs.comp.ollir.OperationType.*;
 
 public class OllirVisitorForJasmin{
@@ -131,6 +130,10 @@ public class OllirVisitorForJasmin{
                     result.append(visitReturnStatement((ReturnInstruction) instruction, varTable));
                 } else if (instruction instanceof PutFieldInstruction) {
                     result.append(visitPutFieldInstruction((PutFieldInstruction) instruction, varTable));
+                }
+                if (instruction.getInstType() == InstructionType.CALL && ((CallInstruction) instruction).getReturnType().getTypeOfElement() != ElementType.VOID) {
+
+                    result.append("\tpop\n");
                 }
             }
             if (method.getReturnType().getTypeOfElement().equals(VOID)) {
