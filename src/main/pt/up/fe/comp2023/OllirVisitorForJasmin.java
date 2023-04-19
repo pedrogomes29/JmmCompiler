@@ -116,7 +116,7 @@ public class OllirVisitorForJasmin{
             } else if (method.getReturnType().getTypeOfElement().name().equals("VOID")) {
                 result.append("V").append("\n");
             } else if (method.getReturnType().getTypeOfElement().name().equals("OBJECTREF")) {
-                result.append("Ljava/lang").append(((ClassType) method.getReturnType()).getName()).append(";\n");
+                result.append("L").append(((ClassType) method.getReturnType()).getName()).append(";\n");
             }
 
             HashMap <String, Descriptor> varTable = method.getVarTable();
@@ -254,15 +254,13 @@ public class OllirVisitorForJasmin{
         if (firstArg.getName().equals("this")){
             result.append(this.className);
         } else if (localVariableIndices.containsKey(firstArg.getName())) {
-                if (!classType.getName().equals(this.className)){
-                    result.append("java/lang/");
-                }
-                result.append(classType.getName());
+            if (classType.getName() == "Integer"){
+                result.append("java/lang/Integer");
+            }else {
 
-        } else {
-            if (!firstArg.getName().equals(this.className)){
-                result.append("java/lang/");
+                result.append(classType.getName());
             }
+        } else {
             result.append(firstArg.getName());
         }
 
@@ -282,11 +280,7 @@ public class OllirVisitorForJasmin{
             } else if (e.getType().getTypeOfElement().equals(BOOLEAN)){
                 result.append("Z");
             } else if (e.getType().getTypeOfElement().equals(OBJECTREF)){
-                result.append("L");
-                if (!((ClassType) e.getType()).getName().equals(this.className)){
-                    result.append("java/lang/");
-                }
-                result.append(((ClassType) e.getType()).getName()).append(";");
+                result.append("Ljava/lang/").append(((ClassType) e.getType()).getName()).append(";");
             }
         }
 
