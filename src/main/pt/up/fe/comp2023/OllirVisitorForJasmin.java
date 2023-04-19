@@ -273,7 +273,7 @@ public class OllirVisitorForJasmin{
             } else if (e.getType().getTypeOfElement().equals(BOOLEAN)){
                 result.append("Z");
             } else if (e.getType().getTypeOfElement().equals(OBJECTREF)){
-                result.append("L");
+                result.append("Ljava/lang/").append(((ClassType) e.getType()).getName()).append(";");
             }
         }
 
@@ -287,7 +287,7 @@ public class OllirVisitorForJasmin{
         } else if (callInstruction.getReturnType().getTypeOfElement().equals(BOOLEAN)){
             result.append("Z");
         } else if (callInstruction.getReturnType().getTypeOfElement().equals(CLASS)){
-            result.append("L");
+            result.append("Ljava/lang/").append(((ClassType) callInstruction.getReturnType()).getName()).append(";");
         }
         result.append("\n");
 
