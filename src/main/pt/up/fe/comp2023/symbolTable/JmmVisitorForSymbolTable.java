@@ -47,18 +47,7 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
 
     private String dealWithArrayAssignment(JmmNode jmmNode, String s) {
         String arrayName = jmmNode.get("array");
-        String methodName = jmmNode.getJmmParent().get("functionName");
-        List<Symbol> localVars = symbolTable.getLocalVariables(methodName);
-        for(Symbol localVar : localVars){
-            if(localVar.getName().equals(arrayName)){
-                if(localVar.getType().isArray()){
-                    break;
-                }
-                else {
-                    throw new RuntimeException("Trying to access a non array variable as an array");
-                }
-            }
-        }
+        dealWithId(jmmNode,arrayName);
         visit(jmmNode.getJmmChild(0),"");
         visit(jmmNode.getJmmChild(1),"");
          JmmNode index = jmmNode.getJmmChild(0);
@@ -68,6 +57,9 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         }
         if (!value.getObject("type").equals(new Type("int",false))){
             throw new RuntimeException("Array value must be an integer");
+        }
+        if(jmmNode.getOptional("undeclaredID").isPresent() || jmmNode.get("imported").equals("true")){
+            throw new RuntimeException("Array " + arrayName + " is not declared");
         }
         jmmNode.putObject("type",new Type("int",false));
         jmmNode.putObject("array",arrayName);
