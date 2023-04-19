@@ -177,7 +177,17 @@ public class OllirVisitorForJasmin{
             String localVariableName = destOperand.getName();
             int localVariableIdx;
             localVariableIdx = localVariable.get(localVariableName).getVirtualReg();
-            if (! (rhs instanceof CallInstruction)) {
+            if (rhs instanceof CallInstruction) {
+                ElementType e = ((CallInstruction) rhs).getReturnType().getTypeOfElement();
+            }
+            if (rhs instanceof  SingleOpInstruction){
+                if (((SingleOpInstruction) rhs).getSingleOperand().getType().getTypeOfElement().equals(OBJECTREF)){
+                    result.append(legalizeInstruction("\tastore",localVariableIdx)).append("\n");
+                } else {
+                    result.append(legalizeInstruction("\tistore",localVariableIdx)).append("\n");
+                }
+            }
+            else if ((! (rhs instanceof CallInstruction)) || ((!((CallInstruction) rhs).getReturnType().getTypeOfElement().equals(OBJECTREF)) && (!((CallInstruction) rhs).getReturnType().getTypeOfElement().equals(CLASS)) && (!((CallInstruction) rhs).getReturnType().getTypeOfElement().equals(THIS)))) {
                 result.append(legalizeInstruction("\tistore",localVariableIdx)).append("\n");
             }else {
                 result.append(legalizeInstruction("\tastore",localVariableIdx)).append("\n");
@@ -280,7 +290,7 @@ public class OllirVisitorForJasmin{
         if (invocationType.equals(NEW)){
             result.append("\tdup\n");
         }
-        if (!callInstruction.getReturnType().getTypeOfElement().equals(ElementType.VOID) && !invocationType.equals(NEW)) {
+        if (invocationType.equals(invokespecial)) {
             result.append("\tpop\n");
         }
 
