@@ -1,42 +1,22 @@
-import utils;
-import a;
+import io;
 
-class myClass {
-<<<<<<< HEAD
-
-    public int test(Integer i) {
-        int x;
-        int y;
-        x = 2;
-        return 2;
-    }
-
-    public static void main(String[] args) {
-        myClass obj;
-        Integer i;
-        int x;
-        obj = new myClass();
-        i = new Integer();
-        x = obj.test(i);
-=======
+class A {
     int a;
-    public int test() {
-        int[] b;
-        int c;
-        c = 2;
-        b = new int[2];
-        b[c] = 1;
-        while(true){
-            if(b[3]<3){
-                b[3] = c - 1;
-            }
-            else{
-                b[3] = c + 1;
-            }
-        }
-        return b[0];
+
+    public int x(int b, String s){
+        a = 10;
+        b = 5;
+        io.print(s);
+        io.llala(b);
+        return a;
     }
-    public static void main(String[] args) {
->>>>>>> e018c1ed6cb09d1d029d20b0448cbfc236c377ad
+
+    public static void main(String[] args){
+        A a;
+        String s;
+        int e;
+
+        a = new A();
+        a.x(e,s);
     }
 }
