@@ -1,24 +1,22 @@
-import utils;
-
-myClass{
+A{
 
 
-    .construct myClass().V {
+    .construct A().V {
         invokespecial(this, "<init>").V;
     }
 
-    .method public test(i.Integer).i32 {
-		x.i32 :=.i32 2.i32;
-		ret.i32 2.i32;
+    .method public x(b.i32, s.String).i32 {
+		b.i32 :=.i32 5.i32;
+		invokestatic(io, "print", $2.s.String).V;
+		invokestatic(io, "llala", $1.b.i32).V;
+		ret.i32 $1.b.i32;
 	}
 
 	.method public static main(args.array.String).V {
-		obj.myClass :=.myClass new(myClass).myClass;
-		invokespecial(obj.myClass,"<init>").V;
-		i.Integer :=.Integer new(Integer).Integer;
-		invokespecial(i.Integer,"<init>").V;
-		x.i32 :=.i32 invokevirtual(obj.myClass, "test", i.Integer).i32;
+		a.A :=.A new(A).A;
+		invokespecial(a.A,"<init>").V;
+		t0.i32 :=.i32 invokevirtual(a.A, "x", e.i32, s.String).i32;
 	}
 
-
+	
 }
