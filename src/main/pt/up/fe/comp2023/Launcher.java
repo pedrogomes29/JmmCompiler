@@ -1,6 +1,7 @@
 package pt.up.fe.comp2023;
 
 import java.io.File;
+import java.sql.SQLOutput;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -11,6 +12,7 @@ import pt.up.fe.comp.jmm.jasmin.JasminResult;
 import pt.up.fe.comp.jmm.ollir.OllirResult;
 import pt.up.fe.comp.jmm.parser.JmmParserResult;
 import pt.up.fe.comp2023.analysis.JmmAnalysisImpl;
+import pt.up.fe.comp2023.jasmin.JasminBackend;
 import pt.up.fe.comp2023.ollir.JmmOptimizationImpl;
 import pt.up.fe.specs.util.SpecsIo;
 import pt.up.fe.specs.util.SpecsLogs;
@@ -54,7 +56,8 @@ public class Launcher {
         System.out.println(jmmSemanticsResult.getRootNode().toTree());
         JmmOptimizationImpl jmmOptimizationImpl = new JmmOptimizationImpl();
         OllirResult ollirResult = jmmOptimizationImpl.toOllir(jmmSemanticsResult);
-        System.out.println(parserResult.toString());
+        JasminBackend jasminBackend = new JasminBackend();
+        JasminResult jasminResult = jasminBackend.toJasmin(ollirResult);
     }
 
     private static Map<String, String> parseArgs(String[] args) {
