@@ -1,4 +1,4 @@
-package pt.up.fe.comp2023;
+package pt.up.fe.comp2023.jasmin;
 
 import org.specs.comp.ollir.ClassUnit;
 import pt.up.fe.comp.jmm.jasmin.JasminResult;
@@ -10,6 +10,7 @@ public class JasminBackend implements pt.up.fe.comp.jmm.jasmin.JasminBackend {
         ClassUnit classUnit = ollirResult.getOllirClass();
         OllirVisitorForJasmin gen = new OllirVisitorForJasmin();
         String jasmin = gen.visit(classUnit);
+        System.out.println(jasmin);
         JasminResult result = new JasminResult(ollirResult, jasmin, ollirResult.getReports());
         return result;
     }

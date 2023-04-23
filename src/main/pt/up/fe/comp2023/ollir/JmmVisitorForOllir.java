@@ -227,6 +227,9 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
 
         }
         else {
+            if (Objects.equals(jmmNode.get("param"), "true"))
+                idCode = "$"+jmmNode.get("offset")+"." + idCode;
+
             if (isLiteralOrFunctionVariable(child))
                 code.append("\t\t").append(idCode).append(" :=.").append(varType).append(" ").append(childCode).append(";\n");
             else {

@@ -1,4 +1,4 @@
-package pt.up.fe.comp2023;
+package pt.up.fe.comp2023.jasmin;
 
 import jas.LocalVarTableAttr;
 import org.specs.comp.ollir.*;
@@ -6,6 +6,7 @@ import org.specs.comp.ollir.*;
 import javax.print.DocFlavor;
 import java.beans.Statement;
 import java.lang.reflect.Array;
+import java.security.interfaces.ECKey;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -95,7 +96,6 @@ public class OllirVisitorForJasmin{
                 result.append("static ");
             }
             result.append(method.getMethodName()).append("(");
-            HashMap<String, Integer> localVariableIndices = new HashMap<String, Integer>();
             for (Element arg : method.getParams()) {
                 if (arg.getType().getTypeOfElement().name().equals("INT32")) {
                     result.append("I");
@@ -105,9 +105,6 @@ public class OllirVisitorForJasmin{
                     result.append("[Ljava/lang/String;");
                 } else if (arg.getType().getTypeOfElement().name().equals("OBJECTREF")) {
                     result.append("L").append(((ClassType) arg.getType()).getName()).append(";");
-                }
-                if (!arg.getType().getTypeOfElement().name().equals("ARRAYREF")) {
-                    localVariableIndices.put(((Operand) arg).getName(), localVariableIndices.size() + 1);
                 }
             }
 
@@ -122,18 +119,22 @@ public class OllirVisitorForJasmin{
                 result.append("L").append(((ClassType) method.getReturnType()).getName()).append(";\n");
             }
 
-
+            HashMap <String, Descriptor> varTable = method.getVarTable();
             result.append("\t.limit stack 99\n").append("\t.limit locals 99\n");
 
             for (Instruction instruction : method.getInstructions()) {
                 if (instruction instanceof AssignInstruction) {
-                    result.append(visitAssignmentStatement((AssignInstruction) instruction, localVariableIndices));
+                    result.append(visitAssignmentStatement((AssignInstruction) instruction, varTable));
                 } else if (instruction instanceof CallInstruction) {
-                    result.append(visitCallInstruction((CallInstruction) instruction, localVariableIndices));
+                    result.append(visitCallInstruction((CallInstruction) instruction, varTable));
                 } else if (instruction instanceof ReturnInstruction) {
-                    result.append(visitReturnStatement((ReturnInstruction) instruction, localVariableIndices));
+                    result.append(visitReturnStatement((ReturnInstruction) instruction, varTable));
                 } else if (instruction instanceof PutFieldInstruction) {
-                    result.append(visitPutFieldInstruction((PutFieldInstruction) instruction, localVariableIndices));
+                    result.append(visitPutFieldInstruction((PutFieldInstruction) instruction, varTable));
+                }
+                if (instruction.getInstType() == InstructionType.CALL && ((CallInstruction) instruction).getReturnType().getTypeOfElement() != ElementType.VOID) {
+
+                    result.append("\tpop\n");
                 }
             }
             if (method.getReturnType().getTypeOfElement().equals(VOID)) {
@@ -149,7 +150,7 @@ public class OllirVisitorForJasmin{
         return result;
     }
 
-    public StringBuilder visitAssignmentStatement(AssignInstruction assign, HashMap<String,Integer> localVariableIndices) {
+    public StringBuilder visitAssignmentStatement(AssignInstruction assign, HashMap <String, Descriptor> localVariable) {
         StringBuilder result = new StringBuilder();
         Instruction rhs = assign.getRhs();
         if (rhs instanceof SingleOpInstruction && ((SingleOpInstruction) rhs).getSingleOperand().isLiteral()) {
@@ -161,49 +162,49 @@ public class OllirVisitorForJasmin{
             if (type == THIS){
                 result.append("\taload_0\n");
             } else if (type == OBJECTREF){
-                result.append(legalizeInstruction("\taload",localVariableIndices.get(variableName))).append("\n");
+                result.append(legalizeInstruction("\taload",localVariable.get(variableName).getVirtualReg())).append("\n");
             } else {
-                result.append(legalizeInstruction("\tiload",localVariableIndices.get(variableName))).append("\n");
+                result.append(legalizeInstruction("\tiload",localVariable.get(variableName).getVirtualReg())).append("\n");
             }
         } else if (rhs instanceof BinaryOpInstruction){
-            result.append(visitBinaryOpInstruction((BinaryOpInstruction) rhs, localVariableIndices));
+            result.append(visitBinaryOpInstruction((BinaryOpInstruction) rhs, localVariable));
         } else if (rhs instanceof CallInstruction){
-            result.append(visitCallInstruction((CallInstruction) rhs,localVariableIndices));
+            result.append(visitCallInstruction((CallInstruction) rhs,localVariable));
         } else if (rhs instanceof  GetFieldInstruction) {
-            result.append(visitGetFieldInstruction((GetFieldInstruction) rhs, localVariableIndices));
+            result.append(visitGetFieldInstruction((GetFieldInstruction) rhs, localVariable));
         }
 
         Operand destOperand = (Operand) assign.getDest();
         InstructionType ins =  assign.getInstType();
-        if (localVariableIndices.containsKey(destOperand.getName()) && !ins.equals(ASSIGN)) {
-            result.append(legalizeInstruction("\tiload",localVariableIndices.get(destOperand.getName()))).append("\n");
+        if (localVariable.containsKey(destOperand.getName()) && !ins.equals(ASSIGN)) {
+            result.append(legalizeInstruction("\tiload",localVariable.get(destOperand.getName()).getVirtualReg())).append("\n");
         } else {
             String localVariableName = destOperand.getName();
             int localVariableIdx;
-            if (!localVariableIndices.containsKey(localVariableName)){
-                localVariableIdx = localVariableIndices.size() + 1;
-                localVariableIndices.put(localVariableName, localVariableIdx);
-
-                if (! (destOperand.getType().getTypeOfElement().equals(OBJECTREF))) {
-                    result.append(legalizeInstruction("\tistore",localVariableIdx)).append("\n");
-                }else {
+            localVariableIdx = localVariable.get(localVariableName).getVirtualReg();
+            if (rhs instanceof CallInstruction) {
+                ElementType e = ((CallInstruction) rhs).getReturnType().getTypeOfElement();
+            }
+            if (rhs instanceof  SingleOpInstruction){
+                if (((SingleOpInstruction) rhs).getSingleOperand().getType().getTypeOfElement().equals(OBJECTREF)){
                     result.append(legalizeInstruction("\tastore",localVariableIdx)).append("\n");
-                }
-            } else {
-                localVariableIdx = localVariableIndices.get(localVariableName);
-                if (! (rhs instanceof CallInstruction)) {
+                } else {
                     result.append(legalizeInstruction("\tistore",localVariableIdx)).append("\n");
-                }else {
-                    result.append(legalizeInstruction("\tastore",localVariableIdx)).append("\n");
                 }
             }
+            else if ((! (rhs instanceof CallInstruction)) || ((!((CallInstruction) rhs).getReturnType().getTypeOfElement().equals(OBJECTREF)) && (!((CallInstruction) rhs).getReturnType().getTypeOfElement().equals(CLASS)) && (!((CallInstruction) rhs).getReturnType().getTypeOfElement().equals(THIS)))) {
+                result.append(legalizeInstruction("\tistore",localVariableIdx)).append("\n");
+            }else {
+                result.append(legalizeInstruction("\tastore",localVariableIdx)).append("\n");
+            }
         }
+
 
         return result;
     }
 
 
-    public StringBuilder visitBinaryOpInstruction(BinaryOpInstruction operation, HashMap<String,Integer> localVariableIndices){
+    public StringBuilder visitBinaryOpInstruction(BinaryOpInstruction operation, HashMap <String, Descriptor> localVariableIndices){
         StringBuilder result = new StringBuilder();
         Element leftElement = operation.getLeftOperand();
         Element rightElement = operation.getRightOperand();
@@ -238,7 +239,7 @@ public class OllirVisitorForJasmin{
         return result;
     }
 
-    public StringBuilder visitCallInstruction(CallInstruction callInstruction,HashMap<String,Integer> localVariableIndices){
+    public StringBuilder visitCallInstruction(CallInstruction callInstruction,HashMap <String, Descriptor> localVariableIndices){
         StringBuilder result = new StringBuilder();
         Operand firstArg = (Operand) callInstruction.getFirstArg();
         ClassType classType = (ClassType) firstArg.getType();
@@ -247,6 +248,7 @@ public class OllirVisitorForJasmin{
             case invokespecial -> result.append(visitInvokeSpecial(callInstruction,localVariableIndices));
             case invokestatic -> result.append(visitInvokeStatic(callInstruction, localVariableIndices));
             case invokevirtual -> result.append(visitInvokeVirtual(callInstruction, localVariableIndices));
+            case NEW -> result.append(visitNew(callInstruction,localVariableIndices));
         }
         result.append("\t").append(callInstruction.getInvocationType().toString().toLowerCase()).append(" ");
         if (firstArg.getName().equals("this")){
@@ -273,7 +275,7 @@ public class OllirVisitorForJasmin{
             } else if (e.getType().getTypeOfElement().equals(BOOLEAN)){
                 result.append("Z");
             } else if (e.getType().getTypeOfElement().equals(OBJECTREF)){
-                result.append("L");
+                result.append("L").append(((ClassType) e.getType()).getName()).append(";");
             }
         }
 
@@ -287,21 +289,19 @@ public class OllirVisitorForJasmin{
         } else if (callInstruction.getReturnType().getTypeOfElement().equals(BOOLEAN)){
             result.append("Z");
         } else if (callInstruction.getReturnType().getTypeOfElement().equals(CLASS)){
-            result.append("L");
+            result.append("L").append(((ClassType) callInstruction.getReturnType()).getName()).append(";");
         }
         result.append("\n");
 
         if (invocationType.equals(NEW)){
             result.append("\tdup\n");
         }
-        if (invocationType.equals(invokespecial)) {
-            result.append(("\tpop\n"));
-        }
+
 
         return result;
     }
 
-    public StringBuilder visitReturnStatement(ReturnInstruction returnIntruction,HashMap<String,Integer> localVariableIndices){
+    public StringBuilder visitReturnStatement(ReturnInstruction returnIntruction,HashMap <String, Descriptor> localVariable){
         StringBuilder result = new StringBuilder();
         if (returnIntruction.getOperand() == null) return result;
         if (returnIntruction.getOperand().isLiteral()){
@@ -312,11 +312,11 @@ public class OllirVisitorForJasmin{
             String localVariableName = returnInstructionOperand.getName();
             int localVariableIdx;
             if (returnInstructionOperand.getType().getTypeOfElement().equals(OBJECTREF)){
-                result.append(legalizeInstruction("\taload",localVariableIndices.get(returnInstructionOperand.getName()))).append("\n");
+                result.append(legalizeInstruction("\taload",localVariable.get(returnInstructionOperand.getName()).getVirtualReg())).append("\n");
             } else if (returnInstructionOperand.getType().getTypeOfElement().equals(THIS)){
                 result.append("\taload_0\n");
             } else {
-                localVariableIdx = localVariableIndices.get(localVariableName);
+                localVariableIdx = localVariable.get(localVariableName).getVirtualReg();
                 result.append(legalizeInstruction("\tiload",localVariableIdx)).append("\n");
             }
         }
@@ -334,38 +334,33 @@ public class OllirVisitorForJasmin{
             result.append("\tldc ").append(value).append("\n");
     }
 
-    public StringBuilder visitOperand(Operand operand, HashMap<String,Integer> localVariableIndices){
+    public StringBuilder visitOperand(Operand operand, HashMap <String, Descriptor> localVariable){
         StringBuilder result = new StringBuilder();
         if (operand.isParameter()){
             result.append(legalizeInstruction("\tiload",operand.getParamId())).append("\n");
         }else {
             String localVariableName = operand.getName();
             int localVariableIdx;
-            if (!localVariableIndices.containsKey(localVariableName)){
-                localVariableIdx = localVariableIndices.size() + 1;
-                localVariableIndices.put(localVariableName, localVariableIdx);
-                result.append(legalizeInstruction("\tiload",localVariableIdx)).append("\n");
-            } else {
-                localVariableIdx = localVariableIndices.get(localVariableName);
-                result.append(legalizeInstruction("\tiload",localVariableIdx)).append("\n");
-            }
+            localVariableIdx = localVariable.get(localVariableName).getVirtualReg();
+            result.append(legalizeInstruction("\tiload",localVariableIdx)).append("\n");
         }
+
         return result;
     }
 
-    public StringBuilder visitInvokeSpecial(CallInstruction callInstruction,HashMap<String,Integer> localVariableIndices){
+    public StringBuilder visitInvokeSpecial(CallInstruction callInstruction,HashMap <String, Descriptor> localVariable){
         StringBuilder result = new StringBuilder();
         String name = ((Operand)callInstruction.getFirstArg()).getName();
-        result.append(legalizeInstruction("\taload",localVariableIndices.get(name))).append("\n");
+        result.append(legalizeInstruction("\taload",localVariable.get(name).getVirtualReg())).append("\n");
         return result;
     }
-    public StringBuilder visitInvokeVirtual(CallInstruction callInstruction,HashMap<String,Integer> localVariableIndices){
+    public StringBuilder visitInvokeVirtual(CallInstruction callInstruction,HashMap <String, Descriptor> localVariable){
         StringBuilder result = new StringBuilder();
         Element firstOperand = callInstruction.getFirstArg();
         if (firstOperand.getType().getTypeOfElement().equals(THIS)){
             result.append("\taload_0\n");
         } else {
-            result.append(legalizeInstruction("\taload",localVariableIndices.get(((Operand)callInstruction.getFirstArg()).getName()))).append("\n");
+            result.append(legalizeInstruction("\taload",localVariable.get(((Operand)callInstruction.getFirstArg()).getName()).getVirtualReg())).append("\n");
         }
         for (Element operand: callInstruction.getListOfOperands()){
             if (operand.isLiteral()){
@@ -373,33 +368,48 @@ public class OllirVisitorForJasmin{
             } else {
                 Operand op = (Operand) operand;
                 if (op.getType().getTypeOfElement().equals(OBJECTREF)) {
-                    result.append(legalizeInstruction("\taload", localVariableIndices.get(op.getName()))).append("\n");
+                    result.append(legalizeInstruction("\taload", localVariable.get(op.getName()).getVirtualReg())).append("\n");
                 } else if (firstOperand.getType().getTypeOfElement().equals(THIS)) {
                     result.append("\taload_0\n");
                 } else {
-                    result.append(legalizeInstruction("\tiload", localVariableIndices.get(op.getName()))).append("\n");
+                    result.append(legalizeInstruction("\tiload", localVariable.get(op.getName()).getVirtualReg())).append("\n");
                 }
             }
         }
         return result;
     }
-    public StringBuilder visitInvokeStatic(CallInstruction callInstruction,HashMap<String,Integer> localVariableIndices){
+    public StringBuilder visitInvokeStatic(CallInstruction callInstruction,HashMap <String, Descriptor> localVariable){
         StringBuilder result = new StringBuilder();
         Element firstOperand = callInstruction.getFirstArg();
         for (Element operand: callInstruction.getListOfOperands()){
-            Operand op = (Operand) operand;
-            if (op.getType().getTypeOfElement().equals(OBJECTREF)){
-                result.append(legalizeInstruction("\taload",localVariableIndices.get(op.getName()))).append("\n");
-            } else if (firstOperand.getType().getTypeOfElement().equals(THIS)){
-                result.append("\taload_0\n");
+            if (operand.isLiteral()){
+                jasmincodeForIntegerVariable(result,Integer.parseInt(((LiteralElement) operand).getLiteral()));
             } else {
-                result.append(legalizeInstruction("\tiload",localVariableIndices.get(op.getName()))).append("\n");
+                Operand op = (Operand) operand;
+                if (op.getType().getTypeOfElement().equals(OBJECTREF)) {
+                    result.append(legalizeInstruction("\taload", localVariable.get(op.getName()).getVirtualReg())).append("\n");
+                } else if (firstOperand.getType().getTypeOfElement().equals(THIS)) {
+                    result.append("\taload_0\n");
+                } else {
+                    result.append(legalizeInstruction("\tiload", localVariable.get(op.getName()).getVirtualReg())).append("\n");
+                }
             }
         }
         return result;
     }
 
-    public StringBuilder visitPutFieldInstruction(PutFieldInstruction putFieldInstruction, HashMap<String,Integer> localVariableIndices){
+    public StringBuilder visitNew(CallInstruction callInstruction, HashMap<String, Descriptor> localVariable){
+        StringBuilder result = new StringBuilder();
+        for (Element element : callInstruction.getListOfOperands()){
+            String name = ((Operand)element).getName();
+            result.append(legalizeInstruction("\taload",localVariable.get(name).getVirtualReg())).append("\n");
+
+        }
+
+        return result;
+    }
+
+    public StringBuilder visitPutFieldInstruction(PutFieldInstruction putFieldInstruction, HashMap <String, Descriptor> localVariables){
         StringBuilder result = new StringBuilder();
         Integer value = Integer.parseInt(((LiteralElement) putFieldInstruction.getThirdOperand()).getLiteral());
         Element firstOperand =putFieldInstruction.getFirstOperand();
@@ -409,7 +419,7 @@ public class OllirVisitorForJasmin{
             jasmincodeForIntegerVariable(result,value);
             result.append("\tputfield ").append(this.className).append("/").append(((Operand) putFieldInstruction.getSecondOperand()).getName());
         } else {
-            result.append(legalizeInstruction("\taload",localVariableIndices.get(((Operand)putFieldInstruction.getFirstOperand()).getName())));
+            result.append(legalizeInstruction("\taload",localVariables.get(((Operand)putFieldInstruction.getFirstOperand()).getName()).getVirtualReg()));
             jasmincodeForIntegerVariable(result,value);
             result.append("\tputfield ").append(((Operand) putFieldInstruction.getFirstOperand())).append("/").append(((Operand) putFieldInstruction.getSecondOperand()).getName());
         }
@@ -422,7 +432,7 @@ public class OllirVisitorForJasmin{
         return result;
     }
 
-    public StringBuilder visitGetFieldInstruction(GetFieldInstruction getFieldInstruction, HashMap<String,Integer> localVariableIndices){
+    public StringBuilder visitGetFieldInstruction(GetFieldInstruction getFieldInstruction, HashMap <String, Descriptor> localVariable){
         StringBuilder result = new StringBuilder();
         Element firstOperand = getFieldInstruction.getFirstOperand();
         Element secondOperand = getFieldInstruction.getSecondOperand();
@@ -430,7 +440,7 @@ public class OllirVisitorForJasmin{
             result.append("\taload_0\n");
             result.append("\tgetfield ").append(this.className).append("/").append(((Operand) getFieldInstruction.getSecondOperand()).getName());
         } else {
-            result.append(legalizeInstruction("\taload", localVariableIndices.get(((Operand)getFieldInstruction.getFirstOperand()).getName())));
+            result.append(legalizeInstruction("\taload", localVariable.get(((Operand)getFieldInstruction.getFirstOperand()).getName()).getVirtualReg()));
             result.append("\tgetfield ").append(((Operand) getFieldInstruction.getFirstOperand())).append("/").append(((Operand) getFieldInstruction.getSecondOperand()).getName());
         }
         if (secondOperand.getType().getTypeOfElement().equals(INT32)) {

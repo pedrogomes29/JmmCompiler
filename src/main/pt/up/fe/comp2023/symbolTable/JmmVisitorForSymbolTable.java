@@ -37,10 +37,33 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         addVisit("Boolean",this::dealWithBoolean);
         addVisit("ExpressionStatement",this::dealWithExpressionStatement);
         addVisit("IfStatement",this::dealWithIfStatement);
+        addVisit("WhileStatement",this::dealWithWhileStatement);
         addVisit("This",this::dealWithThis);
         addVisit("ArrayConstructor",this::dealWithArrayConstructor);
         addVisit("ArrayAccess",this::dealWithArrayAccess);
+        addVisit("ArrayAssignment",this::dealWithArrayAssignment);
         setDefaultVisit(this::dealWithDefaultVisit);
+    }
+
+    private String dealWithArrayAssignment(JmmNode jmmNode, String s) {
+        String arrayName = jmmNode.get("array");
+        dealWithId(jmmNode,arrayName);
+        visit(jmmNode.getJmmChild(0),"");
+        visit(jmmNode.getJmmChild(1),"");
+         JmmNode index = jmmNode.getJmmChild(0);
+         JmmNode value = jmmNode.getJmmChild(1);
+        if (!index.getObject("type").equals(new Type("int",false))){
+            throw new RuntimeException("Array index must be an integer");
+        }
+        if (!value.getObject("type").equals(new Type("int",false))){
+            throw new RuntimeException("Array value must be an integer");
+        }
+        if(jmmNode.getOptional("undeclaredID").isPresent() || jmmNode.get("import").equals("true")){
+            throw new RuntimeException("Array " + arrayName + " is not declared");
+        }
+        jmmNode.putObject("type",new Type("int",false));
+        jmmNode.putObject("array",arrayName);
+        return "";
     }
 
     private String dealWithArrayAccess(JmmNode jmmNode, String s) {
@@ -60,6 +83,11 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         return "\t\tif " + condition + " {\n" + ifCode + "\t\t}\n" + elseCode;
     }
 
+    private String dealWithWhileStatement(JmmNode jmmNode, String s) {
+        String condition = visit(jmmNode.getJmmChild(0),"");
+        String whileCode = visit(jmmNode.getJmmChild(1),"");
+        return "\t\twhile " + condition + " {\n" + whileCode + "\t\t}\n";
+    }
 
     private String dealWithProgram (JmmNode jmmNode , String s) {
 
@@ -81,8 +109,14 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         else
             symbolTable.setSuper(null);
 
+        jmmNode.putObject("methodStatements",new ArrayList<>());
         for ( JmmNode child : jmmNode.getChildren()){
             visit(child,"");
+        }
+        List<JmmNode> methodStatements = (List<JmmNode>)jmmNode.getObject("methodStatements");
+
+        for(JmmNode methodStatement:methodStatements){
+            visit(methodStatement,"");
         }
         return "";
     }
@@ -119,8 +153,18 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
 
         for (;index<jmmNode.getNumChildren();index++){
             JmmNode child = jmmNode.getJmmChild(index);
-            visit(child,"");
+            if(!Objects.equals(child.getKind(), "VarDeclaration"))
+                break;
+            else
+                visit(child,"");
         }
+
+        List<JmmNode> methodStatements = (List<JmmNode>)jmmNode.getJmmParent().getObject("methodStatements");
+        for (;index<jmmNode.getNumChildren();index++){
+            JmmNode child = jmmNode.getJmmChild(index);
+            methodStatements.add(child);
+        }
+        jmmNode.getJmmParent().putObject("methodStatements",methodStatements);
         return "";
     }
 
@@ -137,12 +181,53 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
 
         symbolTable.addParameters(functionName,new Symbol(new Type("String",true),argumentName));
         symbolTable.setIsStatic(functionName,true);
-
-        for (JmmNode child:jmmNode.getChildren()){
-            visit(child,"");
+        int index = 0;
+        for (;index<jmmNode.getNumChildren();index++){
+            JmmNode child = jmmNode.getJmmChild(index);
+            if(!Objects.equals(child.getKind(), "VarDeclaration"))
+                break;
+            else
+                visit(child,"");
         }
 
+        List<JmmNode> methodStatements = (List<JmmNode>)jmmNode.getJmmParent().getObject("methodStatements");
+        for (;index<jmmNode.getNumChildren();index++){
+            JmmNode child = jmmNode.getJmmChild(index);
+            methodStatements.add(child);
+        }
+        jmmNode.getJmmParent().putObject("methodStatements",methodStatements);
         return "";
+    }
+
+    private Type deduceReturnType(JmmNode jmmNode){
+        String methodName = jmmNode.get("methodName");
+        JmmNode parent = jmmNode.getJmmParent();
+        switch (parent.getKind()) {
+            case "ArrayAccess" -> {
+                return new Type("int", false);
+            }
+            case "BinaryOp"->{
+                String op = parent.get("op");
+                if(Objects.equals(op, "&&"))
+                    return new Type("boolean", false);
+                else
+                    return new Type("int", false);
+
+            }
+            case "MethodCall" -> {
+                JmmNode parentObjectWithMethod = parent.getJmmChild(0);
+                if (parentObjectWithMethod.getOptionalObject("type").isPresent() &&
+                        Objects.equals(((Type) parentObjectWithMethod.getObject("type")).getName(), symbolTable.getClassName()) &&
+                        symbolTable.getMethods().contains(parent.get("methodName")))
+                    return symbolTable.getParameters(parent.get("methodName")).get(jmmNode.getIndexOfSelf() - 1).getType();
+                else
+                    throw new RuntimeException("Can't deduce return type of " + methodName);
+
+            }
+            default -> {
+                return (Type) jmmNode.getJmmParent().getObject("type");
+            }
+        }
     }
 
     private String dealWithMethodCall(JmmNode jmmNode, String s){
@@ -150,15 +235,13 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         String methodName = jmmNode.get("methodName");
         JmmNode objectWithMethod = children.get(0);
         visit(objectWithMethod);
-        System.out.println(objectWithMethod);
 
         boolean isStatic = true;
         Type returnType = null;
 
         if(objectWithMethod.get("import").equals("true")){ //imported class static method
             jmmNode.put("isImported","true");
-            returnType = (Type) jmmNode.getJmmParent().getObject("type");
-
+            returnType = deduceReturnType(jmmNode);
         }
         else {
             jmmNode.put("import","false");//result of method call can never be a static reference to a class
@@ -175,18 +258,20 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
                 else jmmNode.put("isImported","false");
             }
             if(isImported) {
-                returnType = (Type) jmmNode.getJmmParent().getObject("type");
+                jmmNode.put("isImported","true");
+                returnType = deduceReturnType(jmmNode);
             }
             else{
-                if(!symbolTable.getMethods().contains(methodName) && jmmNode.get("isImported").equals("false")&& symbolTable.getSuper()==null){
-                    throw new RuntimeException("Method " + methodName + " not found");
+                if(!symbolTable.getMethods().contains(methodName)){
+                    if(symbolTable.getSuper()!=null){
+                        jmmNode.put("isImported","true");
+                        returnType = deduceReturnType(jmmNode);
+                        isStatic = Objects.equals(objectWithMethod.getKind(), "Identifier") && objectWithMethod.get("value")==symbolTable.getClassName();
+                    }
+                    else
+                        throw new RuntimeException("Method " + methodName + " not found");
                 }
-                if(symbolTable.getSuper()!=null){
-                    jmmNode.put("isImported","true");
-                    returnType = new Type(symbolTable.getSuper(),false);
-                    isStatic = false;
-                }
-                else {
+                else{
                     returnType = symbolTable.getReturnType(methodName);
                     isStatic = symbolTable.methodIsStatic(methodName);
                 }
@@ -258,21 +343,6 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
             methodNode = jmmNode.getAncestor("StaticMethod");
 
 
-        for (String imported_class : symbolTable.getImports()) {
-            if (Objects.equals(imported_class, varName)) {
-                jmmNode.putObject("type",new Type(imported_class,false));
-                jmmNode.put("import","true");
-                jmmNode.put("param","false");
-                jmmNode.put("field","false");
-                jmmNode.put("localVar","false");
-                jmmNode.put("offset","0");
-                return imported_class;
-            }
-        }
-        jmmNode.put("undeclaredID","true");
-
-
-        jmmNode.put("import","false");
         if (methodNode.isPresent()) {
             methodName = methodNode.get().get("functionName");
             List<Symbol> localVars = symbolTable.getLocalVariables(methodName);
@@ -284,6 +354,7 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
                     jmmNode.put("param", "false");
                     jmmNode.put("field", "false");
                     jmmNode.put("localVar", "true");
+                    jmmNode.put("import","false");
                     jmmNode.put("offset", "0");
                     return type.getName() + (type.isArray() ? "[]" : "");
                 }
@@ -302,6 +373,7 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
                     jmmNode.put("param", "true");
                     jmmNode.put("field", "false");
                     jmmNode.put("localVar", "false");
+                    jmmNode.put("import","false");
                     jmmNode.put("offset", String.valueOf(param_offset + i));
                     return type.getName() + (type.isArray() ? "[]" : "");
 
@@ -319,11 +391,25 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
                     jmmNode.put("field", "true");
                     jmmNode.put("localVar", "false");
                     jmmNode.put("offset", "0");
+                    jmmNode.put("import","false");
                     return type.getName() + (type.isArray() ? "[]" : "");
+                }
+            }
+            for (String imported_class : symbolTable.getImports()) {
+                if (Objects.equals(imported_class, varName)) {
+                    jmmNode.putObject("type",new Type(imported_class,false));
+                    jmmNode.put("import","true");
+                    jmmNode.put("param","false");
+                    jmmNode.put("field","false");
+                    jmmNode.put("localVar","false");
+                    jmmNode.put("offset","0");
+                    return imported_class;
                 }
             }
 
         }
+
+        jmmNode.put("undeclaredID","true");
         return "";
     }
 
@@ -408,6 +494,10 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
     }
 
     private  String dealWithThis (JmmNode jmmNode, String s) {
+        Optional<JmmNode> staticMethodNode = jmmNode.getAncestor("StaticMethod");
+        if(staticMethodNode.isPresent()){
+            throw new RuntimeException("Cannot use this in a static method");
+        }
         String className = symbolTable.getClassName();
         jmmNode.putObject("type", new Type(className,false));
         jmmNode.put("import","false");
@@ -416,11 +506,11 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         jmmNode.put("localVar","false");
         jmmNode.put("offset","0");
         return "";
-
     }
 
 
     private String dealWithArrayConstructor(JmmNode jmmNode, String s) {
+        visit(jmmNode.getJmmChild(0));
         jmmNode.putObject("type", new Type("int",true));
         return "";
     }
