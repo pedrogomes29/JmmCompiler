@@ -27,6 +27,8 @@ public class JmmSymbolTable implements SymbolTable{
 
     private Integer lastUsedVariable;
 
+    private Integer lastUsedLabel;
+
     public JmmSymbolTable(JmmNode node){
         imports = new ArrayList<>();
         fields = new ArrayList<>();
@@ -39,6 +41,7 @@ public class JmmSymbolTable implements SymbolTable{
         importToPackage = new HashMap<>();
         methodToNode = new HashMap<>();
         lastUsedVariable = -1;
+        lastUsedLabel = -1;
         JmmVisitorForSymbolTable gen = new JmmVisitorForSymbolTable(this);
         gen.visit(node);
     }
@@ -142,8 +145,13 @@ public class JmmSymbolTable implements SymbolTable{
     }
 
     public String getNewVariable(){
-       return String.format("t%s",++lastUsedVariable);
+       return String.format("temp%s",++lastUsedVariable);
     }
+
+    public String getNewLabel(){
+        return String.format("label%s",++lastUsedLabel);
+    }
+
 
     public void decreaseVariable(){lastUsedVariable--;}
 

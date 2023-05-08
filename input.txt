@@ -1,22 +1,15 @@
 import io;
 
-class A {
-    int a;
+class Fac {
+	public int compFac(int num){
+ 		int num_aux;
+        num_aux = 1;
+        while(num_aux < 10)
+            num_aux = num_aux + 1;
+  	    return num_aux;
+	}
 
-    public int x(int b, String s){
-        a = 10;
-        b = 5;
-        io.print(s);
-        io.llala(b);
-        return a;
-    }
-
-    public static void main(String[] args){
-        A a;
-        String s;
-        int e;
-
-        a = new A();
-        a.x(e,s);
-    }
+	public static void main(String[] args){
+ 		io.println(new Fac().compFac(10));
+	}
 }

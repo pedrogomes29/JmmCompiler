@@ -30,6 +30,8 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         addVisit("Integer",this::dealWithInteger);
         addVisit("Identifier",this::dealWithIdentifier);
         addVisit("BinaryOp",this::dealWithBinaryOp);
+        addVisit("RelOp",this::dealWithBinaryOp);
+        addVisit("And",this::dealWithBinaryOp);
         addVisit("Grouping",this::dealWithGrouping);
         addVisit("Constructor",this::dealWithConstructor);
         addVisit("MethodCall",this::dealWithMethodCall);
@@ -75,18 +77,11 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
     }
 
     private String dealWithIfStatement(JmmNode jmmNode, String s) {
-        String condition = visit(jmmNode.getJmmChild(0),"");
-        String ifCode = visit(jmmNode.getJmmChild(1),"");
-        String elseCode = "";
-        if(jmmNode.getNumChildren()==3)
-            elseCode = visit(jmmNode.getJmmChild(2),"");
-        return "\t\tif " + condition + " {\n" + ifCode + "\t\t}\n" + elseCode;
+        return visitAllChildren(jmmNode,"");
     }
 
     private String dealWithWhileStatement(JmmNode jmmNode, String s) {
-        String condition = visit(jmmNode.getJmmChild(0),"");
-        String whileCode = visit(jmmNode.getJmmChild(1),"");
-        return "\t\twhile " + condition + " {\n" + whileCode + "\t\t}\n";
+        return visitAllChildren(jmmNode,"");
     }
 
     private String dealWithProgram (JmmNode jmmNode , String s) {
