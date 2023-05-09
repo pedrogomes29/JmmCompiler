@@ -58,11 +58,14 @@ public class Launcher {
         OllirResult ollirResult = jmmOptimizationImpl.toOllir(jmmSemanticsResult);
         System.out.println(parserResult.toString());
 
+        /*
         JasminBackend jasminBackend = new JasminBackend();
         JasminResult jasminResult = jasminBackend.toJasmin(ollirResult);
 
         System.out.println(jasminResult.getJasminCode());
+         */
     }
+
 
     private static Map<String, String> parseArgs(String[] args) {
         SpecsLogs.info("Executing with args: " + Arrays.toString(args));

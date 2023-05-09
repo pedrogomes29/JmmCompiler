@@ -30,7 +30,6 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         addVisit("Integer",this::dealWithInteger);
         addVisit("Identifier",this::dealWithIdentifier);
         addVisit("BinaryOp",this::dealWithBinaryOp);
-        addVisit("RelOp",this::dealWithBinaryOp);
         addVisit("And",this::dealWithBinaryOp);
         addVisit("Grouping",this::dealWithGrouping);
         addVisit("Constructor",this::dealWithConstructor);

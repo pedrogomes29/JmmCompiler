@@ -1,15 +1,11 @@
 package pt.up.fe.comp2023.ollir;
 
-import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.ast.AJmmVisitor;
 import pt.up.fe.comp.jmm.ast.JmmNode;
 import pt.up.fe.comp2023.symbolTable.JmmSymbolTable;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 
@@ -35,7 +31,6 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
         addVisit("Integer",this::dealWithInteger);
         addVisit("Identifier",this::dealWithIdentifier);
         addVisit("BinaryOp",this::dealWithBinaryOp);
-        addVisit("RelOp",this::dealWithRelOp);
         addVisit("And",this::dealWithAnd);
         addVisit("Grouping",this::dealWithGrouping);
         addVisit("Constructor",this::dealWithConstructor);
@@ -45,12 +40,14 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
         addVisit("ExpressionStatement",this::dealWithExpressionStatement);
         addVisit("IfStatement",this::dealWithIfStatement);
         addVisit("WhileStatement",this::dealWithWhileStatement);
+        addVisit("BlockOfStatements",this::dealWithBlockOfStatements);
         addVisit("This",this::dealWithThis);
         setDefaultVisit(this::dealWithDefaultVisit);
     }
 
 
-    private Boolean isIfOrWhileCondition(JmmNode jmmNode){
+
+    private Boolean isShortCircuit(JmmNode jmmNode){
         Optional<JmmNode> optionalAncestor = jmmNode.getAncestor("IfStatement");
         if(optionalAncestor.isEmpty())
             optionalAncestor = jmmNode.getAncestor("WhileStatement");
@@ -58,20 +55,42 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
             JmmNode ancestor = optionalAncestor.get();
             JmmNode condition = ancestor.getJmmChild(0);
             JmmNode traveling_node = jmmNode;
-            while(traveling_node!=ancestor){
-                if(traveling_node==condition)
-                    return true;
+            String traveling_node_kind = jmmNode.getKind();
+            while(traveling_node!=ancestor && (Objects.equals(traveling_node_kind, "Negation") ||
+                                            Objects.equals(traveling_node_kind, "And") || Objects.equals(traveling_node_kind, "Grouping"))){
+                if(traveling_node==condition){
+                    traveling_node = jmmNode;
+                    traveling_node_kind = traveling_node.getKind();
+                    if (Objects.equals(traveling_node_kind, "And"))
+                        return true;
+
+                    while(Objects.equals(traveling_node_kind, "Negation") || Objects.equals(traveling_node_kind, "Grouping"))
+                        {
+
+                        traveling_node = traveling_node.getJmmChild(0);
+                        traveling_node_kind = traveling_node.getKind();
+                        if (Objects.equals(traveling_node_kind, "And"))
+                            return true;
+                    }
+                    break;
+                }
                 traveling_node = traveling_node.getJmmParent();
             }
         }
         return false;
-
     }
+
     private Boolean isLiteralOrFunctionVariable(JmmNode jmmNode){
-        return Objects.equals(jmmNode.getKind(), "Integer") || Objects.equals(jmmNode.getKind(), "Boolean") || Objects.equals(jmmNode.getKind(), "This") || (Objects.equals(jmmNode.getKind(), "Identifier") && Objects.equals(jmmNode.get("field"), "false"));
+        return Objects.equals(jmmNode.getKind(), "Integer") || Objects.equals(jmmNode.getKind(), "Boolean") || Objects.equals(jmmNode.getKind(), "This") || (Objects.equals(jmmNode.getKind(), "Identifier") && Objects.equals(jmmNode.get("field"), "false"))
+                || Objects.equals(jmmNode.getKind(), "Grouping") && isLiteralOrFunctionVariable(jmmNode.getJmmChild(0));
     }
     private Boolean isConstructor(JmmNode jmmNode){
         return Objects.equals(jmmNode.getKind(), "Constructor");
+    }
+
+    private Boolean isOpInstruction(JmmNode jmmNode){
+        return Objects.equals(jmmNode.getKind(), "Negation") || Objects.equals(jmmNode.getKind(), "BinaryOp") || Objects.equals(jmmNode.getKind(), "And")
+                || Objects.equals(jmmNode.getKind(), "Grouping") && isOpInstruction(jmmNode.getJmmChild(0));
     }
 
     private String dealWithProgram (JmmNode jmmNode , String s) {
@@ -103,9 +122,10 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
                     methodCode.append("\t\tret.").append(returnType)
                             .append(" ").append(childCode).append(";\n");
                 }
-                else
-                    methodCode.append(childCode).append("\t\t").append("ret").append(".").append(returnType).append(" ").
-                            append(child.get("var")).append(";\n");
+                else{
+                        methodCode.append(childCode).append("\t\t").append("ret").append(".").append(returnType).append(" ").
+                                append(child.get("var")).append(";\n");
+                }
             }
             else
                 methodCode.append(childCode);
@@ -122,7 +142,7 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
             String childCode = visit(child,"");
             methodCode.append(childCode);
         }
-
+        methodCode.append("\t\tret.V;\n");
         symbolTable.setMethodOllirCode(functionName,methodCode.toString());
         return "";
     }
@@ -192,6 +212,13 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
 
         return methodCallCode.toString();
     }
+    private String dealWithBlockOfStatements(JmmNode jmmNode,String s){
+        StringBuilder code = new StringBuilder();
+        for(JmmNode child:jmmNode.getChildren()){
+            code.append(visit(child));
+        }
+        return code.toString();
+    }
 
     private  String dealWithIfStatement (JmmNode S, String s) {
         JmmNode E = S.getJmmChild(0);
@@ -213,7 +240,28 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
         String S1Code = visit(S1,"");
         String S2CCode = visit(S2,"");
 
-        String ifCode = ECode + "\t\t" + E.get("true") + ":\n" +  S1Code + "\t\tgoto " +
+        String ifCode;
+        if(isShortCircuit(E))
+            ifCode= ECode; //and Nodes already have the if/else code
+        else{
+            if (isLiteralOrFunctionVariable(E)) {
+                ifCode = String.format("\t\tif (%s) goto %s;\n\t\tgoto %s;\n",
+                        ECode,E.get("true"),E.get("false"));
+            }
+            else{
+                if(isOpInstruction(E)) {
+                    symbolTable.decreaseVariable();
+                    ifCode = E.get("previousCode") + String.format("\t\tif (%s) goto %s;\n\t\tgoto %s;\n",
+                            E.get("rhsCode"), E.get("true"), E.get("false"));
+                }
+                else{
+                    ifCode = E + String.format("\t\tif (%s) goto %s;\n\t\tgoto %s;\n",
+                            E.get("var"),E.get("true"),E.get("false"));
+                }
+            }
+        }
+
+        ifCode +=  "\t\t" + E.get("true") + ":\n" +  S1Code + "\t\tgoto " +
                 S.get("next") + ";\n" + "\t\t" + E.get("false") + ":\n" + S2CCode;
 
         if(noNext){
@@ -243,7 +291,30 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
         String ECode = visit(E,"");
         String S1Code = visit(S1,"");
 
-        String whileCode = "\t\t" + S.get("begin") + ":\n" + ECode + "\t\t" + E.get("true") + ":\n" +
+
+        String expressionCode;
+        if(isShortCircuit(E))
+            expressionCode = ECode; //and Nodes already have the if/else code
+        else{
+            if (isLiteralOrFunctionVariable(E)) {
+                expressionCode = String.format("\t\tif (%s) goto %s;\n\t\tgoto %s;\n",
+                        ECode,E.get("true"),E.get("false"));
+            }
+            else{
+                if(isOpInstruction(E)) {
+                    symbolTable.decreaseVariable();
+                    expressionCode = E.get("previousCode") + String.format("\t\tif (%s) goto %s;\n\t\tgoto %s;\n",
+                            E.get("rhsCode"), E.get("true"), E.get("false"));
+                }
+                else{
+                    expressionCode = E + String.format("\t\tif (%s) goto %s;\n\t\tgoto %s;\n",
+                            E.get("var"),E.get("true"),E.get("false"));
+                }
+            }
+        }
+
+
+        String whileCode = "\t\t" + S.get("begin") + ":\n" + expressionCode + "\t\t" + E.get("true") + ":\n" +
                 S1Code + "\t\tgoto " + S.get("begin") + ";\n";
         if(noNext){
             whileCode += "\t\t" + S.get("next") + ":\n";
@@ -332,7 +403,7 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
 
     private String dealWithNegation (JmmNode jmmNode, String s){
         JmmNode child = jmmNode.getJmmChild(0);
-        if(isIfOrWhileCondition(jmmNode)){
+        if(isShortCircuit(jmmNode)){
             child.put("true",jmmNode.get("false"));
             child.put("false",jmmNode.get("true"));
             return visit(child);
@@ -353,36 +424,8 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
         }
     }
 
-    private String dealWithRelOp(JmmNode jmmNode,String s){
-        if(isIfOrWhileCondition(jmmNode)){
-            JmmNode leftNode = jmmNode.getJmmChild(0);
-            JmmNode rightNode = jmmNode.getJmmChild(1);
-
-            String leftOperandCode = visit(leftNode);
-            String rightOperandCode = visit(rightNode);
-
-
-            if (isLiteralOrFunctionVariable(leftNode) && isLiteralOrFunctionVariable(rightNode)) {
-                return String.format("\t\tif (%s %s.bool %s) goto %s;\n\t\tgoto %s;\n",leftOperandCode,jmmNode.get("op"),
-                        rightOperandCode,jmmNode.get("true"),jmmNode.get("false"));
-            } else if (isLiteralOrFunctionVariable(leftNode)) {
-                return rightOperandCode + String.format("\t\tif (%s %s.bool %s) goto %s;\n\t\tgoto %s;\n",leftOperandCode,jmmNode.get("op"),
-                        rightNode.get("var"),jmmNode.get("true"),jmmNode.get("false"));
-            } else if (isLiteralOrFunctionVariable(rightNode)) {
-                return leftOperandCode + String.format("\t\tif (%s %s.bool %s) goto %s;\n\t\tgoto %s;\n",leftNode.get("var"),jmmNode.get("op"),
-                        rightOperandCode,jmmNode.get("true"),jmmNode.get("false"));
-            } else {
-                return leftOperandCode + rightOperandCode + String.format("\t\tif (%s %s.bool %s) goto %s;\n\t\tgoto %s;\n",leftNode.get("var"),
-                        jmmNode.get("op"), rightNode.get("var"),jmmNode.get("true"),jmmNode.get("false"));
-            }
-        }
-        else{
-            return dealWithBinaryOp(jmmNode,s);
-        }
-    }
-
     private String dealWithAnd(JmmNode jmmNode,String s){
-        if(isIfOrWhileCondition(jmmNode)){
+        if(isShortCircuit(jmmNode)){
             JmmNode leftNode = jmmNode.getJmmChild(0);
             JmmNode rightNode = jmmNode.getJmmChild(1);
 
@@ -394,7 +437,47 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
             String leftNodeCode = visit(leftNode);
             String rightNodeCode = visit(rightNode);
 
-            return leftNodeCode + "\t\t" + leftNode.get("true")+":\n" + rightNodeCode;
+            String firstIf = "";
+            String secondIf = "";
+
+            if(Objects.equals(leftNode.getKind(), "And")){
+                firstIf =  leftNodeCode;
+            }
+            else{
+                if (isLiteralOrFunctionVariable(leftNode)) {
+                    firstIf = String.format("\t\tif (%s) goto %s;\n\t\tgoto %s;\n",
+                            leftNodeCode,leftNode.get("true"),leftNode.get("false"));
+                }
+                else{
+                    if(isOpInstruction(leftNode)) {
+                        symbolTable.decreaseVariable();
+                        firstIf = leftNode.get("previousCode") + String.format("\t\tif (%s) goto %s;\n\t\tgoto %s;\n",
+                                leftNode.get("rhsCode"), leftNode.get("true"), leftNode.get("false"));
+                    }
+                    else{
+                        firstIf = leftNodeCode + String.format("\t\tif (%s) goto %s;\n\t\tgoto %s;\n",
+                                leftNode.get("var"),leftNode.get("true"),leftNode.get("false"));
+                    }
+                }
+            }
+
+            if (isLiteralOrFunctionVariable(rightNode)) {
+                secondIf = String.format("\t\tif (%s) goto %s;\n\t\tgoto %s;\n",
+                        rightNodeCode,rightNode.get("true"),rightNode.get("false"));
+            }
+            else{
+                if(isOpInstruction(rightNode)) {
+                    symbolTable.decreaseVariable();
+                    secondIf = rightNode.get("previousCode") + String.format("\t\tif (%s) goto %s;\n\t\tgoto %s;\n",
+                            rightNode.get("rhsCode"), rightNode.get("true"), rightNode.get("false"));
+                }
+                else{
+                    secondIf = rightNodeCode + String.format("\t\tif (%s) goto %s;\n\t\tgoto %s;\n",
+                            rightNode.get("var"),rightNode.get("true"),rightNode.get("false"));
+                }
+            }
+
+            return firstIf + "\t\t" + leftNode.get("true")+":\n" + secondIf;
         }
         else{
             return dealWithBinaryOp(jmmNode,s);
@@ -440,7 +523,7 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
 
     private String dealWithGrouping(JmmNode jmmNode,String s){
         JmmNode child = jmmNode.getJmmChild(0);
-        if(isIfOrWhileCondition(jmmNode)){
+        if(isShortCircuit(jmmNode)){
             child.put("true",jmmNode.get("true"));
             child.put("false",jmmNode.get("false"));
             return visit(child);
@@ -471,16 +554,8 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
     }
 
     private String dealWithBoolean (JmmNode jmmNode, String s){
-        if(isIfOrWhileCondition(jmmNode)){
-            if(Objects.equals(jmmNode.get("value"), "true"))
-                return "\t\tgoto " + jmmNode.get("true") + ";\n";
-            else
-                return "\t\tgoto " + jmmNode.get("false") +";\n";
-        }
-        else {
-            jmmNode.put("var", jmmNode.get("value") + ".bool");
-            return jmmNode.get("value") + ".bool";
-        }
+        jmmNode.put("var", jmmNode.get("value") + ".bool");
+        return jmmNode.get("value") + ".bool";
     }
 
 

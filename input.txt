@@ -1,15 +1,20 @@
 import io;
 
-class Fac {
-	public int compFac(int num){
- 		int num_aux;
-        num_aux = 1;
-        while(num_aux < 10)
-            num_aux = num_aux + 1;
-  	    return num_aux;
-	}
-
-	public static void main(String[] args){
- 		io.println(new Fac().compFac(10));
+class Arithmetic_less {
+	public static void main(String[] args) {
+        int x;
+        boolean big;
+        x=1;
+        big = false;
+        while(x<10){
+            if(!(x<5) && !big){
+                big = true;
+            }
+            else{
+                big = false;
+            }
+            io.println(big);
+            x = x + 1;
+        }
 	}
 }

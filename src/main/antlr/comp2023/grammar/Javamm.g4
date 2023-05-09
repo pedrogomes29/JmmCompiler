@@ -66,7 +66,7 @@ expression
     | op='!' expression #Negation
     | expression op=('*' | '/') expression #BinaryOp
     | expression op=('+' | '-') expression #BinaryOp
-    | expression op='<' expression #RelOp
+    | expression op='<' expression #BinaryOp
     | expression op='&&' expression #And
     | 'new' 'int' '[' expression ']' #ArrayConstructor
     | 'new' className=ID '(' ')' #Constructor
