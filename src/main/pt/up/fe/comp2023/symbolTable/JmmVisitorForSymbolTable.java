@@ -194,12 +194,11 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         return "";
     }
 
-    private Type deduceReturnType(JmmNode jmmNode){
-        String methodName = jmmNode.get("methodName");
+    private Type deduceReturnType(JmmNode jmmNode,String methodName){
         JmmNode parent = jmmNode.getJmmParent();
         switch (parent.getKind()) {
             case "ArrayAccess" -> {
-                return new Type("int", false);
+                return new Type("int", jmmNode.getIndexOfSelf()==0);
             }
             case "BinaryOp"->{
                 String op = parent.get("op");
@@ -216,11 +215,12 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
                         symbolTable.getMethods().contains(parent.get("methodName")))
                     return symbolTable.getParameters(parent.get("methodName")).get(jmmNode.getIndexOfSelf() - 1).getType();
                 else
-                    throw new RuntimeException("Can't deduce return type of " + methodName);
+                    throw new RuntimeException("Can't deduce return type of " +  methodName);
 
             }
+
             default -> {
-                return (Type) jmmNode.getJmmParent().getObject("type");
+                return (Type) parent.getObject("type");
             }
         }
     }
@@ -236,7 +236,7 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
 
         if(objectWithMethod.get("import").equals("true")){ //imported class static method
             jmmNode.put("isImported","true");
-            returnType = deduceReturnType(jmmNode);
+            returnType = deduceReturnType(jmmNode,methodName);
         }
         else {
             jmmNode.put("import","false");//result of method call can never be a static reference to a class
@@ -254,13 +254,13 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
             }
             if(isImported) {
                 jmmNode.put("isImported","true");
-                returnType = deduceReturnType(jmmNode);
+                returnType = deduceReturnType(jmmNode,methodName);
             }
             else{
                 if(!symbolTable.getMethods().contains(methodName)){
                     if(symbolTable.getSuper()!=null){
                         jmmNode.put("isImported","true");
-                        returnType = deduceReturnType(jmmNode);
+                        returnType = deduceReturnType(jmmNode,methodName);
                         isStatic = Objects.equals(objectWithMethod.getKind(), "Identifier") && objectWithMethod.get("value")==symbolTable.getClassName();
                     }
                     else
@@ -446,14 +446,26 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
     }
 
     private String dealWithGrouping(JmmNode jmmNode,String s){
-        visitAllChildren(jmmNode,"");
         JmmNode child = jmmNode.getJmmChild(0);
-        if(Objects.equals(child.getKind(), "MethodCall"))
-            jmmNode.putObject("type",jmmNode.getJmmParent().getObject("type"));
-        else{
-            for(String attribute: child.getAttributes())
-                jmmNode.putObject(attribute,child.getObject(attribute));
+        if(Objects.equals(child.getKind(), "MethodCall")) {
+            JmmNode traveling_node = jmmNode;
+            while(Objects.equals(traveling_node.getKind(), "Grouping"))
+                traveling_node = traveling_node.getJmmParent();
+
+            if(Objects.equals(traveling_node.getKind(), "ArrayAccess"))
+                jmmNode.putObject("type", new Type("int",true));
+            else
+                jmmNode.putObject("type",traveling_node.getObject("type"));
+            visitAllChildren(jmmNode,"");
         }
+        else{
+            visitAllChildren(jmmNode,"");
+            for(String attribute: child.getAttributes()) {
+                if(!(Objects.equals(jmmNode.getJmmParent().getKind(), "ArrayAssignment") && Objects.equals(attribute, "type")))
+                    jmmNode.putObject(attribute, child.getObject(attribute));
+            }
+        }
+
         return "";
     }
 

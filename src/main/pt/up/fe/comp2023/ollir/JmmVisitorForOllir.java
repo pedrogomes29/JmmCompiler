@@ -418,16 +418,17 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
         String arrayMemberTypeString = JmmOptimizationImpl.typeToOllir(arrayMemberType);
         String arrayTypeString = JmmOptimizationImpl.typeToOllir(new Type(arrayMemberType.getName(),true));
 
+
+
         StringBuilder code = new StringBuilder();
 
         JmmNode lengthNode = jmmNode.getJmmChild(0);
         String lengthCode = visit(lengthNode);
         JmmNode rhs = jmmNode.getJmmChild(1);
-        String rhsCode = visit(rhs);
-        String arrayToAccess = arrayName;
-
         if(!isLiteralOrFunctionVariable(rhs))
             symbolTable.decreaseVariable();
+        String rhsCode = visit(rhs);
+        String arrayToAccess = arrayName;
 
         if(Objects.equals(jmmNode.get("field"), "true")){
             String temp_var = symbolTable.getNewVariable();
@@ -477,7 +478,7 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
 
     private String dealWithArrayAccess(JmmNode jmmNode,String s){
         JmmNode arrayToAccessNode = jmmNode.getJmmChild(0);
-        visit (arrayToAccessNode);
+        String arrayToAccessNodeCode = visit (arrayToAccessNode);
         String[] splittedList = arrayToAccessNode.get("var").split("\\.");
         int i;
         for(i = 0; !Objects.equals(splittedList[i], "array"); i++){
@@ -494,9 +495,13 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
         String temp_var = symbolTable.getNewVariable();
         temp_var = String.format("%s.%s", temp_var, arrayMemberTypeString);
         jmmNode.put("var", temp_var);
-        code.append(arrayToAccessNode.get("previousCode"));
 
         StringBuilder rhsCode = new StringBuilder();
+
+        if (!isLiteralOrFunctionVariable(arrayToAccessNode)) {
+            code.append(arrayToAccessNodeCode);
+        }
+
 
         if(isLiteralOrFunctionVariable(lengthNode)){
             jmmNode.put("previousCode",code.toString());
