@@ -1,20 +1,28 @@
 import io;
 
-class Arithmetic_less {
-	public static void main(String[] args) {
-        int x;
-        boolean big;
-        x=1;
-        big = false;
-        while(x<10){
-            if(!(x<5) && !big){
-                big = true;
-            }
-            else{
-                big = false;
-            }
-            io.println(big);
-            x = x + 1;
-        }
+class myClass {
+
+	public boolean check(int N, int T){
+		int i;
+		boolean all;
+		all = false;
+		i = 0;
+		while((i < N) && (i < T)) {
+			i = i + 1;
+		}
+		if(!(i < N) && i<N+1)
+		    all = true;
+        else
+            all = false;
+	
+		return all;
+	}
+
+	public static void main(String[] args){
+	    if ((new MyClass()).check(5,6))
+	        io.println(1);
+	    else
+	        io.println(0);
+
 	}
 }
