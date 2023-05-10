@@ -145,7 +145,7 @@ public class JmmSymbolTable implements SymbolTable{
     }
 
     public String getNewVariable(){
-       return String.format("temp%s",++lastUsedVariable);
+       return String.format("t%s",++lastUsedVariable);
     }
 
     public String getNewLabel(){

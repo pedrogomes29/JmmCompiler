@@ -28,6 +28,7 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
         addVisit("NormalMethod", this::dealWithNormalMethod);
         addVisit("StaticMethod", this::dealWithStaticMethod);
         addVisit("Assignment",this::dealWithAssignment);
+        addVisit("ArrayAssignment",this::dealWithArrayAssignment);
         addVisit("Integer",this::dealWithInteger);
         addVisit("Identifier",this::dealWithIdentifier);
         addVisit("BinaryOp",this::dealWithBinaryOp);
@@ -42,6 +43,10 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
         addVisit("WhileStatement",this::dealWithWhileStatement);
         addVisit("BlockOfStatements",this::dealWithBlockOfStatements);
         addVisit("This",this::dealWithThis);
+        addVisit("ArrayAccess",this::dealWithArrayAccess);
+        addVisit("ArrayConstructor",this::dealWithArrayConstructor);
+        addVisit("Length",this::dealWithLength);
+
         setDefaultVisit(this::dealWithDefaultVisit);
     }
 
@@ -227,12 +232,15 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
 
         boolean noNext = false;
 
+        E.put("true",symbolTable.getNewLabel());
+        E.put("false",symbolTable.getNewLabel());
+
         if(S.getOptional("next").isEmpty()) {
             S.put("next", symbolTable.getNewLabel());
             noNext = true;
         }
-        E.put("true",symbolTable.getNewLabel());
-        E.put("false",symbolTable.getNewLabel());
+
+
         S1.put("next",S.get("next"));
         S2.put("next",S.get("next"));
 
@@ -277,14 +285,17 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
 
         boolean noNext = false;
 
+
+
+
+        S.put("begin", getSymbolTable().getNewLabel());
+        E.put("true", getSymbolTable().getNewLabel());
+
         if(S.getOptional("next").isEmpty()) {
             S.put("next", symbolTable.getNewLabel());
             noNext = true;
         }
 
-
-        S.put("begin", getSymbolTable().getNewLabel());
-        E.put("true", getSymbolTable().getNewLabel());
         E.put("false",S.get("next"));
         S1.put("next",S.get("begin"));
 
@@ -338,7 +349,7 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
 
             code.append(varName).append(".").append(varType);
             idCode = code.toString();
-            jmmNode.put("previousCode",idCode);
+            jmmNode.put("previousCode","");
             jmmNode.put("var", idCode);
         }
         else {
@@ -353,7 +364,7 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
             }
             else if(Objects.equals(jmmNode.get("import"), "true")){
                 idCode = jmmNode.get("value");
-                jmmNode.put("previousCode",idCode);
+                jmmNode.put("previousCode","");
                 jmmNode.put("var", idCode);
             }
         }
@@ -399,6 +410,128 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
 
         return code.toString();
 
+    }
+
+    private String dealWithArrayAssignment(JmmNode jmmNode, String s) {
+        String arrayName = jmmNode.get("array");
+        Type arrayMemberType = (Type) jmmNode.getObject("type");
+        String arrayMemberTypeString = JmmOptimizationImpl.typeToOllir(arrayMemberType);
+        String arrayTypeString = JmmOptimizationImpl.typeToOllir(new Type(arrayMemberType.getName(),true));
+
+        StringBuilder code = new StringBuilder();
+
+        JmmNode lengthNode = jmmNode.getJmmChild(0);
+        String lengthCode = visit(lengthNode);
+        JmmNode rhs = jmmNode.getJmmChild(1);
+        String rhsCode = visit(rhs);
+        String arrayToAccess = arrayName;
+
+        if(!isLiteralOrFunctionVariable(rhs))
+            symbolTable.decreaseVariable();
+
+        if(Objects.equals(jmmNode.get("field"), "true")){
+            String temp_var = symbolTable.getNewVariable();
+            arrayToAccess = temp_var; //so the array assignment is done to the temp variable
+            temp_var = String.format("%s.%s", temp_var,arrayTypeString);
+            code.append("\t\t" + temp_var + " :=." + arrayTypeString +
+                    " getfield(this, " + temp_var + "." + arrayTypeString + ")." + arrayTypeString + ";\n");
+
+        }
+
+        if (Objects.equals(jmmNode.get("param"), "true"))
+            arrayToAccess = "$"+jmmNode.get("offset")+"." + arrayToAccess;
+
+        if (isLiteralOrFunctionVariable(rhs)) {
+            if(isLiteralOrFunctionVariable(lengthNode)){
+                code.append("\t\t").append(arrayToAccess).append("[").append(lengthCode).append("].").append(arrayMemberTypeString)
+                        .append(" :=.").append(arrayMemberTypeString).append(" ").append(rhsCode).append(";\n");
+            }
+            else{
+                code.append(lengthCode).append("\t\t").append(arrayToAccess).append("[").append(lengthNode.get("var")).append("].").
+                        append(arrayMemberTypeString).append(" :=.").append(arrayMemberTypeString).append(" ").append(rhsCode).append(";\n");
+            }
+        }
+        else {
+            if(isLiteralOrFunctionVariable(lengthNode)){
+                code.append(rhs.get("previousCode")).append("\t\t").append(arrayToAccess).append("[").append(lengthCode).append("].").
+                        append(arrayMemberTypeString).append(" :=.").append(arrayMemberTypeString).append(" ").append(rhs.get("rhsCode")).append(";\n");
+            }
+            else{
+                code.append(lengthCode).append(rhs.get("previousCode")).append("\t\t").append(arrayToAccess).append("[").append(lengthNode.get("var")).append("].")
+                        .append(arrayMemberTypeString).append(" :=.").append(arrayMemberTypeString).append(" ").append(rhs.get("rhsCode")).append(";\n");
+            }
+
+            if(isConstructor(rhs)){
+                code.append("\t\tinvokespecial(").append(arrayToAccess).append(",\"<init>\").V;\n");
+            }
+        }
+
+
+        if(Objects.equals(jmmNode.get("field"), "true")){
+            code.append("\t\tputfield(this, ").append(arrayName).append(".").append(arrayTypeString).append(", ").
+                    append(arrayToAccess).append(arrayTypeString).append(").V;\n");
+        }
+
+        return code.toString();
+    }
+
+    private String dealWithArrayAccess(JmmNode jmmNode,String s){
+        JmmNode arrayToAccessNode = jmmNode.getJmmChild(0);
+        visit (arrayToAccessNode);
+        String[] splittedList = arrayToAccessNode.get("var").split("\\.");
+        int i;
+        for(i = 0; !Objects.equals(splittedList[i], "array"); i++){
+
+        }
+        String arrayToAccess = String.join(".",Arrays.copyOfRange(splittedList, 0, i));
+
+
+        JmmNode lengthNode = jmmNode.getJmmChild(1);
+        String lengthCode = visit(lengthNode);
+        String arrayMemberTypeString = JmmOptimizationImpl.typeToOllir((Type)jmmNode.getObject("type"));
+        StringBuilder code = new StringBuilder();
+
+        String temp_var = symbolTable.getNewVariable();
+        temp_var = String.format("%s.%s", temp_var, arrayMemberTypeString);
+        jmmNode.put("var", temp_var);
+        code.append(arrayToAccessNode.get("previousCode"));
+
+        StringBuilder rhsCode = new StringBuilder();
+
+        if(isLiteralOrFunctionVariable(lengthNode)){
+            jmmNode.put("previousCode",code.toString());
+            rhsCode.append(arrayToAccess).append("[").append(lengthCode).append("].").append(arrayMemberTypeString);
+            jmmNode.put("rhsCode",rhsCode.toString());
+        }
+        else{
+            code.append(lengthCode);
+            jmmNode.put("previousCode",code.toString());
+            rhsCode.append(arrayToAccess).append("[").append(lengthNode.get("var")).append("].").append(arrayMemberTypeString);
+            jmmNode.put("rhsCode",rhsCode.toString());
+        }
+        code.append("\t\t").append(temp_var).append(" :=.").append(arrayMemberTypeString).append(" ").append(rhsCode).append(";\n");
+
+        return code.toString();
+    }
+
+    private String dealWithLength(JmmNode jmmNode, String s){
+        JmmNode array = jmmNode.getJmmChild(0);
+        String arrayCode = visit(array);
+        String temp_var = symbolTable.getNewVariable()+".i32";
+        jmmNode.put("var",temp_var);
+
+        if(isLiteralOrFunctionVariable(array)){
+            jmmNode.put("previousCode","");
+            String rhsCode = "arraylength("+arrayCode+").i32";
+            jmmNode.put("rhsCode",rhsCode);
+            return "\t\t"+temp_var+" :=.i32 " + rhsCode + ";\n";
+        }
+        else{
+            jmmNode.put("previousCode",arrayCode);
+            String rhsCode = "arraylength("+array.get("var")+ ").i32";
+            jmmNode.put("rhsCode",rhsCode);
+            return arrayCode + "\t\t"+temp_var+" :=.i32 " + rhsCode + ";\n";
+        }
     }
 
     private String dealWithNegation (JmmNode jmmNode, String s){
@@ -569,6 +702,28 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
 
         return  "\t\t" + temp_var + "." + className + " :=." + className + " new(" + className + ")." + className + ";\n"
                 + "\t\tinvokespecial(" + temp_var+ "." + className+",\"<init>\").V;\n";
+    }
+
+    private String dealWithArrayConstructor(JmmNode jmmNode, String s) {
+        JmmNode lengthNode = jmmNode.getJmmChild(0);
+        String lengthCode = visit(lengthNode);
+        Type arrayType = (Type)jmmNode.getObject("type");
+        String arrayTypeOllir = JmmOptimizationImpl.typeToOllir(arrayType);
+        String temp_var = symbolTable.getNewVariable() + "." + arrayTypeOllir;
+        if(isLiteralOrFunctionVariable(lengthNode)){
+            String rhsCode = "new(array, "+ lengthCode +")."+arrayTypeOllir;
+            jmmNode.put("previousCode", "");
+            jmmNode.put("rhsCode", rhsCode);
+            jmmNode.put("var", temp_var);
+            return "\t\t" + temp_var + " :=" + arrayTypeOllir + " " +  rhsCode+"\n";
+        }
+        else{
+            String rhsCode = "new(array, "+ lengthNode.get("var") +")."+arrayTypeOllir;
+            jmmNode.put("previousCode", lengthCode);
+            jmmNode.put("rhsCode", rhsCode);
+            jmmNode.put("var", temp_var);
+            return lengthCode + "\t\t" + temp_var + " :=" + arrayTypeOllir + " " +  rhsCode + "\n";
+        }
     }
 
     private  String dealWithDefaultVisit (JmmNode jmmNode, String s){

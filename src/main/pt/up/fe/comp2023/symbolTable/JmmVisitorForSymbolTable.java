@@ -42,6 +42,7 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         addVisit("This",this::dealWithThis);
         addVisit("ArrayConstructor",this::dealWithArrayConstructor);
         addVisit("ArrayAccess",this::dealWithArrayAccess);
+        addVisit("Length",this::dealWithLength);
         addVisit("ArrayAssignment",this::dealWithArrayAssignment);
         setDefaultVisit(this::dealWithDefaultVisit);
     }
@@ -49,6 +50,7 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
     private String dealWithArrayAssignment(JmmNode jmmNode, String s) {
         String arrayName = jmmNode.get("array");
         dealWithId(jmmNode,arrayName);
+        jmmNode.putObject("type",new Type("int",false));
         visit(jmmNode.getJmmChild(0),"");
         visit(jmmNode.getJmmChild(1),"");
          JmmNode index = jmmNode.getJmmChild(0);
@@ -62,17 +64,16 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
         if(jmmNode.getOptional("undeclaredID").isPresent() || jmmNode.get("import").equals("true")){
             throw new RuntimeException("Array " + arrayName + " is not declared");
         }
-        jmmNode.putObject("type",new Type("int",false));
-        jmmNode.putObject("array",arrayName);
         return "";
     }
 
     private String dealWithArrayAccess(JmmNode jmmNode, String s) {
-        String arrayName = visit(jmmNode.getJmmChild(0),"");
-        String index = visit(jmmNode.getJmmChild(1),"");
-        String code = "\t\t" + arrayName + " = " + arrayName + "[" + index + "];\n";
         jmmNode.putObject("type",new Type("int",false));
-        return code;
+        return visitAllChildren(jmmNode,s);
+    }
+    private String dealWithLength(JmmNode jmmNode, String s) {
+        jmmNode.putObject("type",new Type("int",false));
+        return visitAllChildren(jmmNode,s);
     }
 
     private String dealWithIfStatement(JmmNode jmmNode, String s) {
