@@ -448,12 +448,15 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
     private String dealWithGrouping(JmmNode jmmNode,String s){
         JmmNode child = jmmNode.getJmmChild(0);
         if(Objects.equals(child.getKind(), "MethodCall")) {
-            JmmNode traveling_node = jmmNode;
-            while(Objects.equals(traveling_node.getKind(), "Grouping"))
+            JmmNode traveling_node = jmmNode.getJmmParent();
+            int index_of_child = jmmNode.getIndexOfSelf();
+            while(Objects.equals(traveling_node.getKind(), "Grouping")) {
+                index_of_child = traveling_node.getIndexOfSelf();
                 traveling_node = traveling_node.getJmmParent();
+            }
 
             if(Objects.equals(traveling_node.getKind(), "ArrayAccess"))
-                jmmNode.putObject("type", new Type("int",true));
+                jmmNode.putObject("type", new Type("int",index_of_child==0));
             else
                 jmmNode.putObject("type",traveling_node.getObject("type"));
             visitAllChildren(jmmNode,"");

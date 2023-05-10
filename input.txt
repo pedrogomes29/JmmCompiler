@@ -10,7 +10,7 @@ class myClass {
 		i=0;
 		x = ((utils.f()));
 		while(i<A.length) {
-   		    C[i] = (A[i]) + (B[utils.f(5)]);
+   		    C[i] = (A[i]) + (B[((utils.f(5)))]);
    		    i = i + 1;
 		}
 		return C;
