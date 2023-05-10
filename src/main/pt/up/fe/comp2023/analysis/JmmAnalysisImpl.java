@@ -72,7 +72,7 @@ public class JmmAnalysisImpl implements JmmAnalysis {
         }
     }
     private void verifyTypes(JmmNode node, List<Report> reports) {
-        if (Objects.equals(node.getKind(), "BinaryOp")) {
+        if (Objects.equals(node.getKind(), "BinaryOp") || Objects.equals(node.getKind(), "And")) {
             JmmNode left = node.getChildren().get(0);
             JmmNode right = node.getChildren().get(1);
             Type leftType = (Type)left.getObject("type");
