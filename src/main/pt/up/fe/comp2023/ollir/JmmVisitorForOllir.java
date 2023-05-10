@@ -307,7 +307,7 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
                             E.get("rhsCode"), E.get("true"), E.get("false"));
                 }
                 else{
-                    expressionCode = E + String.format("\t\tif (%s) goto %s;\n\t\tgoto %s;\n",
+                    expressionCode = ECode + String.format("\t\tif (%s) goto %s;\n\t\tgoto %s;\n",
                             E.get("var"),E.get("true"),E.get("false"));
                 }
             }

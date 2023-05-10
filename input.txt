@@ -1,28 +1,37 @@
-import io;
+import ioPlus;
+class SwitchStat {
 
-class myClass {
 
-	public boolean check(int N, int T){
-		int i;
-		boolean all;
-		all = false;
-		i = 0;
-		while((i < N) && (i < T)) {
-			i = i + 1;
-		}
-		if(!(i < N) && i<N+1)
-		    all = true;
-        else
-            all = false;
-	
-		return all;
-	}
+    public int func(int a){
+		int result;
 
-	public static void main(String[] args){
-	    if ((new MyClass()).check(5,6))
-	        io.println(1);
-	    else
-	        io.println(0);
+        if(a < 1){
+          result =1;
+        } else {
+            if(a < 2){
+             result = 2;
+            } else {
+                if(a < 3){
+                    result = 3;
+                } else {
+                    if(a < 4){
+                        result = 4;
+                    } else {
+                        if(a < 5){
+                            result = 5;
+                        } else {
+                            if(a < 6){
+                                result = 6;
+                            } else {
+                                result = 7;
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
-	}
+        return result;
+    }
+
 }
