@@ -56,13 +56,13 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
          JmmNode index = jmmNode.getJmmChild(0);
          JmmNode value = jmmNode.getJmmChild(1);
         if (!index.getObject("type").equals(new Type("int",false))){
-            throw new RuntimeException("Array index must be an integer");
+            throw new SemanticAnalysisException("Array index must be an integer",jmmNode);
         }
         if (!value.getObject("type").equals(new Type("int",false))){
-            throw new RuntimeException("Array value must be an integer");
+            throw new SemanticAnalysisException("Array value must be an integer",jmmNode);
         }
-        if(jmmNode.getOptional("undeclaredID").isPresent() || jmmNode.get("import").equals("true")){
-            throw new RuntimeException("Array " + arrayName + " is not declared");
+        if(jmmNode.get("import").equals("true")){
+            throw new SemanticAnalysisException("Array " + arrayName + " is not declared",jmmNode);
         }
         return "";
     }
@@ -215,7 +215,7 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
                         symbolTable.getMethods().contains(parent.get("methodName")))
                     return symbolTable.getParameters(parent.get("methodName")).get(jmmNode.getIndexOfSelf() - 1).getType();
                 else
-                    throw new RuntimeException("Can't deduce return type of " +  methodName);
+                    throw new SemanticAnalysisException("Can't deduce return type of " +  methodName,jmmNode);
 
             }
 
@@ -264,7 +264,7 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
                         isStatic = Objects.equals(objectWithMethod.getKind(), "Identifier") && objectWithMethod.get("value")==symbolTable.getClassName();
                     }
                     else
-                        throw new RuntimeException("Method " + methodName + " not found");
+                        throw new SemanticAnalysisException("Method " + methodName + " not found",jmmNode);
                 }
                 else{
                     returnType = symbolTable.getReturnType(methodName);
@@ -404,8 +404,7 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
 
         }
 
-        jmmNode.put("undeclaredID","true");
-        return "";
+        throw new SemanticAnalysisException("Variable " + varName + " is not declared",jmmNode);
     }
 
     private String dealWithAssignment(JmmNode jmmNode, String s){
@@ -506,7 +505,7 @@ public class JmmVisitorForSymbolTable extends AJmmVisitor< String , String >{
     private  String dealWithThis (JmmNode jmmNode, String s) {
         Optional<JmmNode> staticMethodNode = jmmNode.getAncestor("StaticMethod");
         if(staticMethodNode.isPresent()){
-            throw new RuntimeException("Cannot use this in a static method");
+            throw new SemanticAnalysisException("Cannot use this in a static method",jmmNode);
         }
         String className = symbolTable.getClassName();
         jmmNode.putObject("type", new Type(className,false));

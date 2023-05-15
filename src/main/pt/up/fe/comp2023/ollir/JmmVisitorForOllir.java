@@ -118,7 +118,7 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
         StringBuilder methodCode = new StringBuilder();
 
         Type ollirReturnType = symbolTable.getReturnType(functionName);
-        String returnType = JmmOptimizationImpl.typeToOllir(ollirReturnType);
+        String returnType = OllirUtils.typeToOllir(ollirReturnType);
         for (int index = 1 + nrArguments+symbolTable.getLocalVariables(functionName).size();index<jmmNode.getNumChildren();index++){
             JmmNode child = jmmNode.getJmmChild(index);
             String childCode = visit(child,"");
@@ -164,7 +164,7 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
 
 
         boolean isStatic = Objects.equals(jmmNode.get("static"), "true");
-        String returnType = JmmOptimizationImpl.typeToOllir((Type) jmmNode.getObject("type"));
+        String returnType = OllirUtils.typeToOllir((Type) jmmNode.getObject("type"));
 
         for(JmmNode argument:children.subList(1,children.size())) {
             String argumentCode = visit(argument);
@@ -340,7 +340,7 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
 
     private String dealWithIdentifier(JmmNode jmmNode, String s) {
         String varName = jmmNode.get("value");
-        String varType = JmmOptimizationImpl.typeToOllir((Type)jmmNode.getObject("type"));
+        String varType = OllirUtils.typeToOllir((Type)jmmNode.getObject("type"));
         String idCode = "";
         if(Objects.equals(jmmNode.get("field"), "false") && Objects.equals(jmmNode.get("import"), "false")) {
             StringBuilder code = new StringBuilder();
@@ -375,7 +375,7 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
 
     private String dealWithAssignment(JmmNode jmmNode, String s){
         String varName = jmmNode.get("varName");
-        String varType = JmmOptimizationImpl.typeToOllir((Type)jmmNode.getObject("type"));
+        String varType = OllirUtils.typeToOllir((Type)jmmNode.getObject("type"));
         String idCode = varName+"."+varType;
 
         StringBuilder code = new StringBuilder();
@@ -415,8 +415,8 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
     private String dealWithArrayAssignment(JmmNode jmmNode, String s) {
         String arrayName = jmmNode.get("array");
         Type arrayMemberType = (Type) jmmNode.getObject("type");
-        String arrayMemberTypeString = JmmOptimizationImpl.typeToOllir(arrayMemberType);
-        String arrayTypeString = JmmOptimizationImpl.typeToOllir(new Type(arrayMemberType.getName(),true));
+        String arrayMemberTypeString = OllirUtils.typeToOllir(arrayMemberType);
+        String arrayTypeString = OllirUtils.typeToOllir(new Type(arrayMemberType.getName(),true));
 
 
 
@@ -489,7 +489,7 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
 
         JmmNode lengthNode = jmmNode.getJmmChild(1);
         String lengthCode = visit(lengthNode);
-        String arrayMemberTypeString = JmmOptimizationImpl.typeToOllir((Type)jmmNode.getObject("type"));
+        String arrayMemberTypeString = OllirUtils.typeToOllir((Type)jmmNode.getObject("type"));
         StringBuilder code = new StringBuilder();
 
         String temp_var = symbolTable.getNewVariable();
@@ -630,7 +630,7 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
         String temp_var;
 
 
-        String type = JmmOptimizationImpl.typeToOllir((Type)jmmNode.getObject("type"));
+        String type = OllirUtils.typeToOllir((Type)jmmNode.getObject("type"));
         jmmNode.put("type",type);
 
         String leftOperandCode = visit(leftNode);
@@ -713,7 +713,7 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
         JmmNode lengthNode = jmmNode.getJmmChild(0);
         String lengthCode = visit(lengthNode);
         Type arrayType = (Type)jmmNode.getObject("type");
-        String arrayTypeOllir = JmmOptimizationImpl.typeToOllir(arrayType);
+        String arrayTypeOllir = OllirUtils.typeToOllir(arrayType);
         String temp_var = symbolTable.getNewVariable() + "." + arrayTypeOllir;
         if(isLiteralOrFunctionVariable(lengthNode)){
             String rhsCode = "new(array, "+ lengthCode +")."+arrayTypeOllir;

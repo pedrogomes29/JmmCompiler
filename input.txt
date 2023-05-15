@@ -1,18 +1,10 @@
-import utils;
+class ClassNotImported {
 
-class myClass {
+    public static void main(String[] args) {
 
-	public int[] sum(int[] A, int[] B){
-		int[] C;
-		boolean x;
-		int i;
-		C = new int[A.length];
-		i=0;
-		x = ((utils.f()));
-		while(i<A.length) {
-   		    C[i] = (A[i]) + (B[((utils.f(5)))]);
-   		    i = i + 1;
-		}
-		return C;
-	}
+    }
+
+    public int foo() {
+        return A.bar();
+    }
 }

@@ -16,33 +16,11 @@ import java.util.stream.Collectors;
 
 public class JmmOptimizationImpl implements JmmOptimization {
 
-    public static String typeToOllir(Type type){
-        String typeName = type.getName();
-        switch(typeName){
-            case "int":
-                typeName="i32";
-                break;
-            case "boolean":
-                typeName="bool";
-                break;
-            case "void":
-                typeName="V";
-                break;
-            default:
-                break; //already the right name (classname)
-        }
-        if(type.isArray()){
-            return "array." + typeName;
-        }
-        else
-            return typeName;
-    }
-
     private String fieldsToOllir(List<Symbol> fields){
         StringBuilder fieldsCodeBuilder = new StringBuilder();
         for(Symbol field:fields){
             String accessModifierAndFieldName = String.format("\t.field %s %s","private",field.getName());
-            String fieldType = String.format(".%s;\n",typeToOllir(field.getType()));
+            String fieldType = String.format(".%s;\n",OllirUtils.typeToOllir(field.getType()));
             fieldsCodeBuilder.append(accessModifierAndFieldName).append(fieldType);
         }
         return fieldsCodeBuilder.toString();
@@ -59,11 +37,11 @@ public class JmmOptimizationImpl implements JmmOptimization {
 
             List<Symbol> params = symbolTable.getParameters(method);
             String paramsString = (String)params.stream().map((param) -> {
-                return param.getName()+"."+typeToOllir(param.getType());
+                return param.getName()+"."+OllirUtils.typeToOllir(param.getType());
             }).collect(Collectors.joining(", "));
             methodsCodeBuilder.append(paramsString);
 
-            methodsCodeBuilder.append(").").append(typeToOllir(symbolTable.getReturnType(method))).append(" {\n").
+            methodsCodeBuilder.append(").").append(OllirUtils.typeToOllir(symbolTable.getReturnType(method))).append(" {\n").
                     append(symbolTable.getMethodOllirCode(method)).append("\t}\n\n\t");
         }
         return methodsCodeBuilder.toString();
