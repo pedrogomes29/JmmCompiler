@@ -6,12 +6,11 @@ import pt.up.fe.comp.jmm.ast.JmmNode;
 import pt.up.fe.comp2023.symbolTable.JmmSymbolTable;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 
 public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
 
-    private JmmSymbolTable symbolTable;
+    private final JmmSymbolTable symbolTable;
 
     public JmmVisitorForOllir(JmmSymbolTable symbolTable){
         this.symbolTable = symbolTable;
@@ -181,9 +180,7 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
 
         String arguments_call = "";
         if(arguments.size()>0)
-            arguments_call = ", " + (String)arguments.stream().map((dir) -> {
-                return dir;
-            }).collect(Collectors.joining(", "));
+            arguments_call = ", " + String.join(", ", arguments);
 
 
         if (Objects.equals(returnType, "V")) {
@@ -194,7 +191,6 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
 
             methodCallCode.append(objectWithMethod.get("var")).append(", \"").append(methodName).append("\"").
                     append(arguments_call).append(").V;\n");
-            ;
         } else {
             String temp_var = symbolTable.getNewVariable();
             jmmNode.put("var", temp_var + "." + returnType);
@@ -252,21 +248,7 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
         if(isShortCircuit(E))
             ifCode= ECode; //and Nodes already have the if/else code
         else{
-            if (isLiteralOrFunctionVariable(E)) {
-                ifCode = String.format("\t\tif (%s) goto %s;\n\t\tgoto %s;\n",
-                        ECode,E.get("true"),E.get("false"));
-            }
-            else{
-                if(isOpInstruction(E)) {
-                    symbolTable.decreaseVariable();
-                    ifCode = E.get("previousCode") + String.format("\t\tif (%s) goto %s;\n\t\tgoto %s;\n",
-                            E.get("rhsCode"), E.get("true"), E.get("false"));
-                }
-                else{
-                    ifCode = ECode + String.format("\t\tif (%s) goto %s;\n\t\tgoto %s;\n",
-                            E.get("var"),E.get("true"),E.get("false"));
-                }
-            }
+            ifCode = generateIfCode(E,ECode);
         }
 
         ifCode +=  "\t\t" + E.get("true") + ":\n" +  S1Code + "\t\tgoto " +
@@ -307,21 +289,7 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
         if(isShortCircuit(E))
             expressionCode = ECode; //and Nodes already have the if/else code
         else{
-            if (isLiteralOrFunctionVariable(E)) {
-                expressionCode = String.format("\t\tif (%s) goto %s;\n\t\tgoto %s;\n",
-                        ECode,E.get("true"),E.get("false"));
-            }
-            else{
-                if(isOpInstruction(E)) {
-                    symbolTable.decreaseVariable();
-                    expressionCode = E.get("previousCode") + String.format("\t\tif (%s) goto %s;\n\t\tgoto %s;\n",
-                            E.get("rhsCode"), E.get("true"), E.get("false"));
-                }
-                else{
-                    expressionCode = ECode + String.format("\t\tif (%s) goto %s;\n\t\tgoto %s;\n",
-                            E.get("var"),E.get("true"),E.get("false"));
-                }
-            }
+            expressionCode = generateIfCode(E,ECode);
         }
 
 
@@ -434,8 +402,9 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
             String temp_var = symbolTable.getNewVariable();
             arrayToAccess = temp_var; //so the array assignment is done to the temp variable
             temp_var = String.format("%s.%s", temp_var,arrayTypeString);
-            code.append("\t\t" + temp_var + " :=." + arrayTypeString +
-                    " getfield(this, " + temp_var + "." + arrayTypeString + ")." + arrayTypeString + ";\n");
+            code.append("\t\t").append(temp_var).append(" :=.").append(arrayTypeString).
+                    append(" getfield(this, ").append(temp_var).append(".").append(arrayTypeString).append(").").
+                    append(arrayTypeString).append(";\n");
 
         }
 
@@ -562,6 +531,25 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
         }
     }
 
+
+    private String generateIfCode(JmmNode node,String nodeCode){
+        if (isLiteralOrFunctionVariable(node)) {
+            return String.format("\t\tif (%s) goto %s;\n\t\tgoto %s;\n",
+                    nodeCode,node.get("true"),node.get("false"));
+        }
+        else{
+            if(isOpInstruction(node)) {
+                symbolTable.decreaseVariable();
+                return node.get("previousCode") + String.format("\t\tif (%s) goto %s;\n\t\tgoto %s;\n",
+                        node.get("rhsCode"), node.get("true"), node.get("false"));
+            }
+            else{
+                return nodeCode + String.format("\t\tif (%s) goto %s;\n\t\tgoto %s;\n",
+                        node.get("var"),node.get("true"),node.get("false"));
+            }
+        }
+    }
+
     private String dealWithAnd(JmmNode jmmNode,String s){
         if(isShortCircuit(jmmNode)){
             JmmNode leftNode = jmmNode.getJmmChild(0);
@@ -575,45 +563,17 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
             String leftNodeCode = visit(leftNode);
             String rightNodeCode = visit(rightNode);
 
-            String firstIf = "";
-            String secondIf = "";
+            String firstIf;
+            String secondIf;
 
             if(Objects.equals(leftNode.getKind(), "And")){
                 firstIf =  leftNodeCode;
             }
             else{
-                if (isLiteralOrFunctionVariable(leftNode)) {
-                    firstIf = String.format("\t\tif (%s) goto %s;\n\t\tgoto %s;\n",
-                            leftNodeCode,leftNode.get("true"),leftNode.get("false"));
-                }
-                else{
-                    if(isOpInstruction(leftNode)) {
-                        symbolTable.decreaseVariable();
-                        firstIf = leftNode.get("previousCode") + String.format("\t\tif (%s) goto %s;\n\t\tgoto %s;\n",
-                                leftNode.get("rhsCode"), leftNode.get("true"), leftNode.get("false"));
-                    }
-                    else{
-                        firstIf = leftNodeCode + String.format("\t\tif (%s) goto %s;\n\t\tgoto %s;\n",
-                                leftNode.get("var"),leftNode.get("true"),leftNode.get("false"));
-                    }
-                }
+                firstIf = generateIfCode(leftNode,leftNodeCode);
             }
 
-            if (isLiteralOrFunctionVariable(rightNode)) {
-                secondIf = String.format("\t\tif (%s) goto %s;\n\t\tgoto %s;\n",
-                        rightNodeCode,rightNode.get("true"),rightNode.get("false"));
-            }
-            else{
-                if(isOpInstruction(rightNode)) {
-                    symbolTable.decreaseVariable();
-                    secondIf = rightNode.get("previousCode") + String.format("\t\tif (%s) goto %s;\n\t\tgoto %s;\n",
-                            rightNode.get("rhsCode"), rightNode.get("true"), rightNode.get("false"));
-                }
-                else{
-                    secondIf = rightNodeCode + String.format("\t\tif (%s) goto %s;\n\t\tgoto %s;\n",
-                            rightNode.get("var"),rightNode.get("true"),rightNode.get("false"));
-                }
-            }
+            secondIf = generateIfCode(rightNode,rightNodeCode);
 
             return firstIf + "\t\t" + leftNode.get("true")+":\n" + secondIf;
         }
