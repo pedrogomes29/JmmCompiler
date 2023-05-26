@@ -3,18 +3,20 @@ package pt.up.fe.comp2023.jasmin;
 import jas.LocalVarTableAttr;
 import org.specs.comp.ollir.*;
 
+import javax.lang.model.element.TypeElement;
 import javax.print.DocFlavor;
+import javax.swing.*;
 import java.beans.Statement;
 import java.lang.reflect.Array;
 import java.security.interfaces.ECKey;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-import static org.specs.comp.ollir.CallType.NEW;
-import static org.specs.comp.ollir.CallType.invokespecial;
+import static org.specs.comp.ollir.CallType.*;
 import static org.specs.comp.ollir.ElementType.*;
-import static org.specs.comp.ollir.InstructionType.ASSIGN;
+import static org.specs.comp.ollir.InstructionType.*;
 import static org.specs.comp.ollir.OperationType.*;
 
 public class OllirVisitorForJasmin{
@@ -109,33 +111,30 @@ public class OllirVisitorForJasmin{
             }
 
             result.append(")");
-            if (method.getReturnType().getTypeOfElement().name().equals("BOOLEAN")) {
+            ElementType returnTypeOfElement = method.getReturnType().getTypeOfElement();
+            if (returnTypeOfElement.equals(ARRAYREF)){
+                result.append("[");
+                returnTypeOfElement = ((ArrayType) method.getReturnType()).getArrayType();
+            }
+            if (returnTypeOfElement.name().equals("BOOLEAN")) {
                 result.append("Z").append("\n");
-            } else if (method.getReturnType().getTypeOfElement().name().equals("INT32")) {
+            } else if (returnTypeOfElement.name().equals("INT32")) {
                 result.append("I").append("\n");
-            } else if (method.getReturnType().getTypeOfElement().name().equals("VOID")) {
+            } else if (returnTypeOfElement.name().equals("VOID")) {
                 result.append("V").append("\n");
-            } else if (method.getReturnType().getTypeOfElement().name().equals("OBJECTREF")) {
+            } else if (returnTypeOfElement.name().equals("OBJECTREF")) {
                 result.append("L").append(((ClassType) method.getReturnType()).getName()).append(";\n");
             }
 
             HashMap <String, Descriptor> varTable = method.getVarTable();
             result.append("\t.limit stack 99\n").append("\t.limit locals 99\n");
-
             for (Instruction instruction : method.getInstructions()) {
-                if (instruction instanceof AssignInstruction) {
-                    result.append(visitAssignmentStatement((AssignInstruction) instruction, varTable));
-                } else if (instruction instanceof CallInstruction) {
-                    result.append(visitCallInstruction((CallInstruction) instruction, varTable));
-                } else if (instruction instanceof ReturnInstruction) {
-                    result.append(visitReturnStatement((ReturnInstruction) instruction, varTable));
-                } else if (instruction instanceof PutFieldInstruction) {
-                    result.append(visitPutFieldInstruction((PutFieldInstruction) instruction, varTable));
+                for (Map.Entry<String, Instruction> label : method.getLabels().entrySet()) {
+                    if (label.getValue().equals(instruction)) {
+                        result.append(label.getKey()).append(":\n");
+                    }
                 }
-                if (instruction.getInstType() == InstructionType.CALL && ((CallInstruction) instruction).getReturnType().getTypeOfElement() != ElementType.VOID) {
-
-                    result.append("\tpop\n");
-                }
+                result.append(getInstruction(instruction, varTable));
             }
             if (method.getReturnType().getTypeOfElement().equals(VOID)) {
                 result.append("\treturn\n");
@@ -150,6 +149,28 @@ public class OllirVisitorForJasmin{
         return result;
     }
 
+    private StringBuilder getInstruction(Instruction instruction, HashMap<String, Descriptor> varTable) {
+        StringBuilder result = new StringBuilder();
+        if (instruction instanceof AssignInstruction) {
+            result.append(visitAssignmentStatement((AssignInstruction) instruction, varTable));
+        } else if (instruction instanceof CallInstruction) {
+            result.append(visitCallInstruction((CallInstruction) instruction, varTable));
+        } else if (instruction instanceof ReturnInstruction) {
+            result.append(visitReturnStatement((ReturnInstruction) instruction, varTable));
+        } else if (instruction instanceof PutFieldInstruction) {
+            result.append(visitPutFieldInstruction((PutFieldInstruction) instruction, varTable));
+        } else if (instruction instanceof GotoInstruction) {
+            result.append(visitGotoInstruction((GotoInstruction) instruction, varTable));
+        } else if (instruction instanceof CondBranchInstruction) {
+            result.append(visitCondBranchInstruction((CondBranchInstruction) instruction, varTable));
+        }
+        if (instruction.getInstType() == InstructionType.CALL && ((CallInstruction) instruction).getReturnType().getTypeOfElement() != ElementType.VOID) {
+
+            result.append("\tpop\n");
+        }
+        return result;
+    }
+
     public StringBuilder visitAssignmentStatement(AssignInstruction assign, HashMap <String, Descriptor> localVariable) {
         StringBuilder result = new StringBuilder();
         Instruction rhs = assign.getRhs();
@@ -161,9 +182,19 @@ public class OllirVisitorForJasmin{
             String variableName = ((Operand)((SingleOpInstruction) rhs).getSingleOperand()).getName();
             if (type == THIS){
                 result.append("\taload_0\n");
-            } else if (type == OBJECTREF){
+            } else if (type == OBJECTREF || type == ARRAYREF){
                 result.append(legalizeInstruction("\taload",localVariable.get(variableName).getVirtualReg())).append("\n");
-            } else {
+            } else if (((SingleOpInstruction) rhs).getSingleOperand() instanceof ArrayOperand){
+                result.append(legalizeInstruction("\taload",localVariable.get(variableName).getVirtualReg())).append("\n");
+                for (Element element: ((ArrayOperand) ((SingleOpInstruction) rhs).getSingleOperand()).getIndexOperands()){
+                    if (element.isLiteral()){
+                        jasmincodeForIntegerVariable(result, Integer.parseInt(((LiteralElement) element).getLiteral()));
+                    } else {
+                        getLoadInstruction(result, element, localVariable);
+                    }
+                }
+                result.append("\tiaload\n");
+            }else {
                 result.append(legalizeInstruction("\tiload",localVariable.get(variableName).getVirtualReg())).append("\n");
             }
         } else if (rhs instanceof BinaryOpInstruction){
@@ -177,8 +208,8 @@ public class OllirVisitorForJasmin{
         Operand destOperand = (Operand) assign.getDest();
         InstructionType ins =  assign.getInstType();
         if (localVariable.containsKey(destOperand.getName()) && !ins.equals(ASSIGN)) {
-            result.append(legalizeInstruction("\tiload",localVariable.get(destOperand.getName()).getVirtualReg())).append("\n");
-        } else {
+                result.append(legalizeInstruction("\tiload",localVariable.get(destOperand.getName()).getVirtualReg())).append("\n");
+         } else {
             String localVariableName = destOperand.getName();
             int localVariableIdx;
             localVariableIdx = localVariable.get(localVariableName).getVirtualReg();
@@ -186,16 +217,43 @@ public class OllirVisitorForJasmin{
                 ElementType e = ((CallInstruction) rhs).getReturnType().getTypeOfElement();
             }
             if (rhs instanceof  SingleOpInstruction){
-                if (((SingleOpInstruction) rhs).getSingleOperand().getType().getTypeOfElement().equals(OBJECTREF)){
+                if (destOperand instanceof ArrayOperand){
+                    result.append("");
+                } else if (((SingleOpInstruction) rhs).getSingleOperand().getType().getTypeOfElement().equals(OBJECTREF) || ((SingleOpInstruction) rhs).getSingleOperand().getType().getTypeOfElement().equals(ARRAYREF)){
                     result.append(legalizeInstruction("\tastore",localVariableIdx)).append("\n");
-                } else {
+                }  else {
                     result.append(legalizeInstruction("\tistore",localVariableIdx)).append("\n");
                 }
             }
-            else if ((! (rhs instanceof CallInstruction)) || ((!((CallInstruction) rhs).getReturnType().getTypeOfElement().equals(OBJECTREF)) && (!((CallInstruction) rhs).getReturnType().getTypeOfElement().equals(CLASS)) && (!((CallInstruction) rhs).getReturnType().getTypeOfElement().equals(THIS)))) {
+            else if ((! (rhs instanceof CallInstruction)) || ((!((CallInstruction) rhs).getReturnType().getTypeOfElement().equals(OBJECTREF)) && (!((CallInstruction) rhs).getReturnType().getTypeOfElement().equals(CLASS)) && (!((CallInstruction) rhs).getReturnType().getTypeOfElement().equals(THIS)) && (!((CallInstruction) rhs).getReturnType().getTypeOfElement().equals(ARRAYREF)))) {
                 result.append(legalizeInstruction("\tistore",localVariableIdx)).append("\n");
             }else {
                 result.append(legalizeInstruction("\tastore",localVariableIdx)).append("\n");
+            }
+            if (destOperand instanceof ArrayOperand){
+                getLoadInstruction(result, destOperand, localVariable);
+                for (Element element: ((ArrayOperand) destOperand).getIndexOperands()){
+                    if (element.isLiteral()){
+                        jasmincodeForIntegerVariable(result, Integer.parseInt(((LiteralElement) element).getLiteral()));
+                    } else {
+                        getLoadInstruction(result, element, localVariable);
+                    }
+                }
+                if (rhs instanceof SingleOpInstruction && ((SingleOpInstruction) rhs).getSingleOperand().isLiteral()) {
+                    Integer value = Integer.parseInt(((LiteralElement) ((SingleOpInstruction) rhs).getSingleOperand()).getLiteral());
+                    jasmincodeForIntegerVariable(result, value);
+                } else if (rhs instanceof SingleOpInstruction) {
+                    ElementType type = ((SingleOpInstruction) rhs).getSingleOperand().getType().getTypeOfElement();
+                    String variableName = ((Operand) ((SingleOpInstruction) rhs).getSingleOperand()).getName();
+                    if (type == THIS) {
+                        result.append("\taload_0\n");
+                    } else if (type == OBJECTREF || type == ARRAYREF) {
+                        result.append(legalizeInstruction("\taload", localVariable.get(variableName).getVirtualReg())).append("\n");
+                    } else {
+                        result.append(legalizeInstruction("\tiload", localVariable.get(variableName).getVirtualReg())).append("\n");
+                    }
+                }
+                result.append("\tiastore\n");
             }
         }
 
@@ -235,6 +293,12 @@ public class OllirVisitorForJasmin{
         } else if (opType.equals(DIV)) {
             result.append("\tidiv");
             result.append("\n");
+        } else if (opType.equals(ANDB)) {
+            result.append("\tiand");
+            result.append("\n");
+        } else if (opType.equals(ORB)) {
+            result.append("\tior");
+            result.append("\n");
         }
         return result;
     }
@@ -242,6 +306,9 @@ public class OllirVisitorForJasmin{
     public StringBuilder visitCallInstruction(CallInstruction callInstruction,HashMap <String, Descriptor> localVariableIndices){
         StringBuilder result = new StringBuilder();
         Operand firstArg = (Operand) callInstruction.getFirstArg();
+        if (firstArg.getType().getTypeOfElement().equals(ARRAYREF)){
+            return result.append(visitCallArray(callInstruction, localVariableIndices));
+        }
         ClassType classType = (ClassType) firstArg.getType();
         CallType invocationType = callInstruction.getInvocationType();
         switch (invocationType){
@@ -268,19 +335,29 @@ public class OllirVisitorForJasmin{
         }
         ArrayList<Element> operands = callInstruction.getListOfOperands();
         for (Element e : operands) {
-            if (e.getType().getTypeOfElement().equals(VOID)){
+            ElementType elementType = e.getType().getTypeOfElement();
+            if (elementType.equals(ARRAYREF)){
+                result.append("[");
+                elementType = ((ArrayType) e.getType()).getArrayType();
+            }
+            if (elementType.equals(VOID)){
                 result.append("V");
-            } else if (e.getType().getTypeOfElement().equals(INT32)){
+            } else if (elementType.equals(INT32)){
                 result.append("I");
-            } else if (e.getType().getTypeOfElement().equals(BOOLEAN)){
+            } else if (elementType.equals(BOOLEAN)){
                 result.append("Z");
-            } else if (e.getType().getTypeOfElement().equals(OBJECTREF)){
+            } else if (elementType.equals(OBJECTREF)){
                 result.append("L").append(((ClassType) e.getType()).getName()).append(";");
             }
         }
 
         if (! invocationType.equals(NEW)) {
             result.append(")");
+        }
+        ElementType elementType = callInstruction.getReturnType().getTypeOfElement();
+        if (elementType.equals(ARRAYREF)){
+            result.append("[");
+            elementType = ((ArrayType) callInstruction.getReturnType()).getArrayType();
         }
         if (callInstruction.getReturnType().getTypeOfElement().equals(VOID)){
             result.append("V");
@@ -367,7 +444,7 @@ public class OllirVisitorForJasmin{
                 jasmincodeForIntegerVariable(result, Integer.valueOf(((LiteralElement) operand).getLiteral()));
             } else {
                 Operand op = (Operand) operand;
-                if (op.getType().getTypeOfElement().equals(OBJECTREF)) {
+                if (op.getType().getTypeOfElement().equals(OBJECTREF) || op.getType().getTypeOfElement().equals(STRING) || op.getType().getTypeOfElement().equals(ARRAYREF)) {
                     result.append(legalizeInstruction("\taload", localVariable.get(op.getName()).getVirtualReg())).append("\n");
                 } else if (firstOperand.getType().getTypeOfElement().equals(THIS)) {
                     result.append("\taload_0\n");
@@ -386,7 +463,7 @@ public class OllirVisitorForJasmin{
                 jasmincodeForIntegerVariable(result,Integer.parseInt(((LiteralElement) operand).getLiteral()));
             } else {
                 Operand op = (Operand) operand;
-                if (op.getType().getTypeOfElement().equals(OBJECTREF)) {
+                if (op.getType().getTypeOfElement().equals(OBJECTREF) || op.getType().getTypeOfElement().equals(STRING) || op.getType().getTypeOfElement().equals(ARRAYREF)) {
                     result.append(legalizeInstruction("\taload", localVariable.get(op.getName()).getVirtualReg())).append("\n");
                 } else if (firstOperand.getType().getTypeOfElement().equals(THIS)) {
                     result.append("\taload_0\n");
@@ -449,6 +526,135 @@ public class OllirVisitorForJasmin{
             result.append(" Z");
         }
         result.append("\n");
+        return result;
+    }
+
+    public StringBuilder visitGotoInstruction(GotoInstruction gotoInstruction, HashMap <String, Descriptor> localVariable){
+        StringBuilder result = new StringBuilder();
+        result.append("\tgoto ").append(gotoInstruction.getLabel()).append("\n");
+        return result;
+    }
+
+    public StringBuilder visitCondBranchInstruction(CondBranchInstruction condBranchInstruction, HashMap<String, Descriptor> localVariable){
+        StringBuilder result = new StringBuilder();
+        Instruction instruction;
+        if (condBranchInstruction instanceof SingleOpCondInstruction) {
+            SingleOpCondInstruction singleOpCondInstruction = (SingleOpCondInstruction) condBranchInstruction;
+            instruction = singleOpCondInstruction.getCondition();
+        } else if (condBranchInstruction instanceof OpCondInstruction) {
+            OpCondInstruction opCondInstruction = (OpCondInstruction) condBranchInstruction;
+            instruction = opCondInstruction.getCondition();
+        } else {
+            return result;
+        }
+
+        InstructionType type = instruction.getInstType();
+        if (type.equals(BINARYOPER)){
+            BinaryOpInstruction binaryOpInstruction = (BinaryOpInstruction) instruction;
+            OperationType operationType = binaryOpInstruction.getOperation().getOpType();
+            if (operationType.equals(ANDB)){
+                result.append(getInstruction(instruction, localVariable));
+                result.append("\tifne ").append(condBranchInstruction.getLabel()).append("\n");
+            } else if (operationType.equals(LTH)) {
+                Element lhs = binaryOpInstruction.getLeftOperand();
+                Element rhs = binaryOpInstruction.getRightOperand();
+                boolean leftIsLiteral = false;
+                boolean rightIsLiteral = false;
+
+                if (lhs instanceof  LiteralElement) {
+                    leftIsLiteral = true;
+                } else if (rhs instanceof  LiteralElement) {
+                    rightIsLiteral = true;
+                }
+                if (leftIsLiteral) {
+                    jasmincodeForIntegerVariable(result,Integer.parseInt(((LiteralElement) lhs).getLiteral()));
+                    getLoadInstruction(result,rhs, localVariable);
+                    result.append("\tifgt ").append(condBranchInstruction.getLabel()).append("\n");
+                } else if  (rightIsLiteral){
+                    jasmincodeForIntegerVariable(result,Integer.parseInt(((LiteralElement) rhs).getLiteral()));
+                    getLoadInstruction(result,lhs,localVariable);
+                    result.append("\tiflt ").append(condBranchInstruction.getLabel()).append("\n");
+                } else {
+                    getLoadInstruction(result,lhs,localVariable);
+                    getLoadInstruction(result,rhs,localVariable);
+                    result.append("\tif_icmplt ").append(condBranchInstruction.getLabel()).append("\n");
+                }
+            } else if (operationType.equals(GTE)){
+                Element lhs = binaryOpInstruction.getLeftOperand();
+                Element rhs = binaryOpInstruction.getRightOperand();
+                boolean leftIsLiteral = false;
+                boolean rightIsLiteral = false;
+
+                if (lhs instanceof  LiteralElement) {
+                    leftIsLiteral = true;
+                } else if (rhs instanceof  LiteralElement) {
+                    rightIsLiteral = true;
+                }
+                if (leftIsLiteral) {
+                    jasmincodeForIntegerVariable(result,Integer.parseInt(((LiteralElement) lhs).getLiteral()));
+                    getLoadInstruction(result,rhs, localVariable);
+                    result.append("\tiflt ").append(condBranchInstruction.getLabel()).append("\n");
+                } else if  (rightIsLiteral){
+                    jasmincodeForIntegerVariable(result,Integer.parseInt(((LiteralElement) lhs).getLiteral()));
+                    getLoadInstruction(result,lhs,localVariable);
+                    result.append("\tifgt ").append(condBranchInstruction.getLabel()).append("\n");
+                } else {
+                    getLoadInstruction(result,lhs,localVariable);
+                    getLoadInstruction(result,rhs,localVariable);
+                    result.append("\tif_icmpgt ").append(condBranchInstruction.getLabel()).append("\n");
+                }
+            }
+
+        } else if (type.equals(UNARYOPER)) {
+            UnaryOpInstruction unaryOpInstruction = (UnaryOpInstruction) instruction;
+            if (unaryOpInstruction.getOperation().getOpType().equals(NOTB)) {
+                getLoadInstruction(result,unaryOpInstruction.getOperand(),localVariable);
+                result.append("\tifne ").append(condBranchInstruction.getLabel()).append("\n");
+            }
+        } else {
+            if (instruction instanceof SingleOpInstruction){
+                Element element = ((SingleOpInstruction) instruction).getSingleOperand();
+                if (element instanceof LiteralElement){
+                    jasmincodeForIntegerVariable(result, Integer.parseInt(((LiteralElement) element).getLiteral()));
+                }
+            } else {
+                result.append(getInstruction(instruction, localVariable));
+            }
+            result.append("\tifne ").append(condBranchInstruction.getLabel()).append("\n");
+        }
+        return result;
+    }
+
+    public void getLoadInstruction(StringBuilder result, Element element, HashMap<String, Descriptor> varTable){
+        Operand op = (Operand) element;
+        ElementType type = op.getType().getTypeOfElement();
+        if (type.equals(OBJECTREF) || type.equals(STRING)){
+            result.append("\taload").append(varTable.get(op.getName())).append("\n");
+        } else if(element instanceof ArrayOperand) {
+            result.append("\taload_").append(varTable.get(op.getName()).getVirtualReg()).append("\n");
+        } else if (element.getType().getTypeOfElement().equals(ARRAYREF)){
+            result.append("\taload_").append(varTable.get(op.getName()).getVirtualReg()).append("\n");
+        } else if (type.equals(THIS)){
+            result.append("\taload0").append("\n");
+        } else {
+            result.append(legalizeInstruction("\tiload",varTable.get(op.getName()).getVirtualReg())).append("\n");
+        }
+    }
+
+    public StringBuilder visitCallArray(CallInstruction callInstruction, HashMap<String, Descriptor> localVariables){
+        StringBuilder result = new StringBuilder();
+        if (callInstruction.getInvocationType().equals(arraylength)){
+            getLoadInstruction(result, callInstruction.getFirstArg(), localVariables);
+            result.append("\tarraylength\n");
+        } else {
+            for (Element element : callInstruction.getListOfOperands()) {
+                getLoadInstruction(result, element, localVariables);
+            }
+
+            result.append("\tnewarray int\n");
+        }
+
+
         return result;
     }
 
