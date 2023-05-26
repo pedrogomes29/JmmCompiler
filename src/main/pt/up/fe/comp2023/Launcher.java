@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.specs.comp.ollir.OllirErrorException;
 import pt.up.fe.comp.TestUtils;
 import pt.up.fe.comp.jmm.analysis.JmmSemanticsResult;
 import pt.up.fe.comp.jmm.jasmin.JasminResult;
@@ -20,7 +21,7 @@ import pt.up.fe.specs.util.SpecsSystem;
 
 public class Launcher {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws OllirErrorException {
         // Setups console logging and other things
         SpecsSystem.programStandardInit();
 
@@ -57,6 +58,8 @@ public class Launcher {
         JmmOptimizationImpl jmmOptimizationImpl = new JmmOptimizationImpl();
         OllirResult ollirResult = jmmOptimizationImpl.toOllir(jmmSemanticsResult);
         System.out.println(parserResult.toString());
+        ollirResult.getOllirClass().buildCFGs();
+        ollirResult.getOllirClass().outputCFGs();
 
         /*
         JasminBackend jasminBackend = new JasminBackend();
@@ -69,20 +72,59 @@ public class Launcher {
 
     private static Map<String, String> parseArgs(String[] args) {
         SpecsLogs.info("Executing with args: " + Arrays.toString(args));
+        if (args.length == 2) {
+            if (args[1].equals("-o")) {
+                Map<String, String> config = new HashMap<>();
+                config.put("inputFile", args[0]);
+                config.put("optimize", "true");
+                config.put("registerAllocation", "-1");
+                config.put("debug", "false");
 
-        // Check if there is at least one argument
-        if (args.length != 1) {
-            throw new RuntimeException("Expected a single argument, a path to an existing input file.");
+                return config;
+            }
+            if (args[1].startsWith("-r")) {
+                Map<String, String> config = new HashMap<>();
+                config.put("inputFile", args[0]);
+                config.put("optimize", "false");
+                config.put("registerAllocation", args[1].substring(3));
+                config.put("debug", "false");
+
+                return config;
+            }
         }
+        if (args.length == 3) {
+            if (args[1].equals("-o") && args[2].startsWith("-r")) {
+                Map<String, String> config = new HashMap<>();
+                config.put("inputFile", args[0]);
+                config.put("optimize", "true");
+                config.put("registerAllocation", args[2].substring(3));
+                config.put("debug", "false");
 
-        // Create config
-        Map<String, String> config = new HashMap<>();
-        config.put("inputFile", args[0]);
-        config.put("optimize", "false");
-        config.put("registerAllocation", "-1");
-        config.put("debug", "false");
+                return config;
+            }
+            if (args[2].equals("-o") && args[1].startsWith("-r")) {
+                Map<String, String> config = new HashMap<>();
+                config.put("inputFile", args[0]);
+                config.put("optimize", "true");
+                config.put("registerAllocation", args[1].substring(3));
+                config.put("debug", "false");
 
-        return config;
+                return config;
+            }
+        }
+        else if (args.length == 1) {
+            Map<String, String> config = new HashMap<>();
+            config.put("inputFile", args[0]);
+            config.put("optimize", "false");
+            config.put("registerAllocation", "-1");
+            config.put("debug", "false");
+
+            return config;
+        }
+        else {
+            throw new RuntimeException("Provided arguments are not valid.");
+        }
+        return null;
     }
 
 }
