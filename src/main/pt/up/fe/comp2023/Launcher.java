@@ -72,20 +72,59 @@ public class Launcher {
 
     private static Map<String, String> parseArgs(String[] args) {
         SpecsLogs.info("Executing with args: " + Arrays.toString(args));
+        if (args.length == 2) {
+            if (args[1].equals("-o")) {
+                Map<String, String> config = new HashMap<>();
+                config.put("inputFile", args[0]);
+                config.put("optimize", "true");
+                config.put("registerAllocation", "-1");
+                config.put("debug", "false");
 
-        // Check if there is at least one argument
-        if (args.length != 1) {
-            throw new RuntimeException("Expected a single argument, a path to an existing input file.");
+                return config;
+            }
+            if (args[1].startsWith("-r")) {
+                Map<String, String> config = new HashMap<>();
+                config.put("inputFile", args[0]);
+                config.put("optimize", "false");
+                config.put("registerAllocation", args[1].substring(3));
+                config.put("debug", "false");
+
+                return config;
+            }
         }
+        if (args.length == 3) {
+            if (args[1].equals("-o") && args[2].startsWith("-r")) {
+                Map<String, String> config = new HashMap<>();
+                config.put("inputFile", args[0]);
+                config.put("optimize", "true");
+                config.put("registerAllocation", args[2].substring(3));
+                config.put("debug", "false");
 
-        // Create config
-        Map<String, String> config = new HashMap<>();
-        config.put("inputFile", args[0]);
-        config.put("optimize", "false");
-        config.put("registerAllocation", "-1");
-        config.put("debug", "false");
+                return config;
+            }
+            if (args[2].equals("-o") && args[1].startsWith("-r")) {
+                Map<String, String> config = new HashMap<>();
+                config.put("inputFile", args[0]);
+                config.put("optimize", "true");
+                config.put("registerAllocation", args[1].substring(3));
+                config.put("debug", "false");
 
-        return config;
+                return config;
+            }
+        }
+        else if (args.length == 1) {
+            Map<String, String> config = new HashMap<>();
+            config.put("inputFile", args[0]);
+            config.put("optimize", "false");
+            config.put("registerAllocation", "-1");
+            config.put("debug", "false");
+
+            return config;
+        }
+        else {
+            throw new RuntimeException("Provided arguments are not valid.");
+        }
+        return null;
     }
 
 }

@@ -103,4 +103,13 @@ public class JmmOptimizationImpl implements JmmOptimization {
         System.out.println(ollirCode);
         return new OllirResult(ollirCode,jmmSemanticsResult.getConfig());
     }
+    @Override
+    public JmmSemanticsResult optimize(JmmSemanticsResult jmmSemanticsResult) {
+        return jmmSemanticsResult;
+    }
+    @Override
+    public OllirResult optimize(OllirResult ollirResult) {
+        return null;
+    }
+
 }
