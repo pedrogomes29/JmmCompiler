@@ -1,6 +1,7 @@
 package pt.up.fe.comp2023.jasmin;
 
 import jas.LocalVarTableAttr;
+import org.antlr.runtime.tree.RewriteEmptyStreamException;
 import org.specs.comp.ollir.*;
 
 import javax.lang.model.element.TypeElement;
@@ -99,13 +100,18 @@ public class OllirVisitorForJasmin{
             }
             result.append(method.getMethodName()).append("(");
             for (Element arg : method.getParams()) {
-                if (arg.getType().getTypeOfElement().name().equals("INT32")) {
+                String elementTypeName = arg.getType().getTypeOfElement().name();
+                if (elementTypeName.equals("ARRAYREF")){
+                    result.append("[");
+                    elementTypeName = ((ArrayType) arg.getType()).getArrayType().name();
+                }
+                if (elementTypeName.equals("INT32")) {
                     result.append("I");
-                } else if (arg.getType().getTypeOfElement().name().equals("BOOLEAN")) {
+                } else if (elementTypeName.equals("BOOLEAN")) {
                     result.append("Z");
-                } else if (arg.getType().getTypeOfElement().name().equals("ARRAYREF")) {
-                    result.append("[Ljava/lang/String;");
-                } else if (arg.getType().getTypeOfElement().name().equals("OBJECTREF")) {
+                } else if (elementTypeName.equals("STRING")) {
+                    result.append("Ljava/lang/String;");
+                } else if (elementTypeName.equals("OBJECTREF")) {
                     result.append("L").append(((ClassType) arg.getType()).getName()).append(";");
                 }
             }
