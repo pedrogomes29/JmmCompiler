@@ -13,9 +13,6 @@ import pt.up.fe.comp.jmm.jasmin.JasminResult;
 import pt.up.fe.comp.jmm.ollir.OllirResult;
 import pt.up.fe.comp.jmm.parser.JmmParserResult;
 import pt.up.fe.comp2023.analysis.JmmAnalysisImpl;
-import pt.up.fe.comp2023.analysis.JmmVisitorForAnalysis;
-import pt.up.fe.comp2023.astOptimization.AstOptimization;
-import pt.up.fe.comp2023.constFolding.JmmVisitorForConstFolding;
 import pt.up.fe.comp2023.jasmin.JasminBackend;
 import pt.up.fe.comp2023.ollir.JmmOptimizationImpl;
 import pt.up.fe.specs.util.SpecsIo;
@@ -57,9 +54,7 @@ public class Launcher {
 
         JmmAnalysisImpl jmmAnalysisImpl = new JmmAnalysisImpl();
         JmmSemanticsResult jmmSemanticsResult = jmmAnalysisImpl.semanticAnalysis(parserResult);
-        AstOptimization astOptimization = new AstOptimization();
-        astOptimization.optimize(jmmSemanticsResult);
-
+        System.out.println(jmmSemanticsResult.getRootNode().toTree());
         JmmOptimizationImpl jmmOptimizationImpl = new JmmOptimizationImpl();
         OllirResult ollirResult = jmmOptimizationImpl.toOllir(jmmSemanticsResult);
         ollirResult = jmmOptimizationImpl.optimize(ollirResult);

@@ -1,10 +1,11 @@
 package pt.up.fe.comp2023.constFolding;
 
+import pt.up.fe.comp.jmm.analysis.table.Type;
 import pt.up.fe.comp.jmm.ast.JmmNode;
 import pt.up.fe.comp.jmm.ast.JmmNodeImpl;
 
 public class ExpressionVisitor {
-    public void visitBinaryOpExpression(JmmNode node) {
+    public boolean visitBinaryOpExpression(JmmNode node) {
         JmmNode leftChild = node.getChildren().get(0);
         JmmNode rightChild = node.getChildren().get(1);
 
@@ -25,17 +26,19 @@ public class ExpressionVisitor {
                     constantNode.put("value", "false");
                 }
                 constantNode.put("value", String.valueOf(resultValue));
-                constantNode.putObject("type", "boolean");
-                node.getJmmParent().replace(constantNode);
+                constantNode.putObject("type",new Type("boolean",false));
+                node.replace(constantNode);
 
             }
             else {
                 JmmNode constantNode = new JmmNodeImpl("Integer");
                 constantNode.put("value", String.valueOf(resultValue));
-                constantNode.putObject("type", "int");
-                node.getJmmParent().replace(constantNode);
+                constantNode.putObject("type",new Type("int",false));
+                node.replace(constantNode);
             }
+            return true;
         }
+        return false;
     }
     private boolean isConstantExpression(JmmNode node) {
         return node.getKind().equals("Integer") || node.getKind().equals("True") || node.getKind().equals("False");
