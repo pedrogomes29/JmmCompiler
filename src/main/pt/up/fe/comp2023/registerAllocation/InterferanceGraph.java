@@ -1,4 +1,4 @@
-package pt.up.fe.comp2023.ollir;
+package pt.up.fe.comp2023.registerAllocation;
 
 import org.specs.comp.ollir.*;
 

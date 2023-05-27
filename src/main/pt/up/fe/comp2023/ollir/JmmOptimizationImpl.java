@@ -2,7 +2,6 @@ package pt.up.fe.comp2023.ollir;
 
 import org.specs.comp.ollir.ClassUnit;
 import org.specs.comp.ollir.Method;
-import org.specs.comp.ollir.Node;
 import pt.up.fe.comp.jmm.analysis.JmmSemanticsResult;
 import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.ollir.JmmOptimization;
@@ -10,8 +9,12 @@ import pt.up.fe.comp.jmm.ollir.OllirResult;
 import pt.up.fe.comp.jmm.report.Report;
 import pt.up.fe.comp.jmm.report.ReportType;
 import pt.up.fe.comp.jmm.report.Stage;
+import pt.up.fe.comp2023.constFolding.JmmVisitorForConstFolding;
+import pt.up.fe.comp2023.constPropagation.JmmVisitorForConstPropagation;
+import pt.up.fe.comp2023.registerAllocation.MethodVisitor;
 import pt.up.fe.comp2023.symbolTable.JmmSymbolTable;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 
@@ -104,18 +107,35 @@ public class JmmOptimizationImpl implements JmmOptimization {
         System.out.println(ollirCode);
         return new OllirResult(ollirCode,jmmSemanticsResult.getConfig());
     }
+
+    @Override
+    public JmmSemanticsResult optimize(JmmSemanticsResult semanticsResult){
+        boolean continueOptimizing = semanticsResult.getConfig().containsKey("optimize") && Objects.equals(semanticsResult.getConfig().get("optimize"), "true");
+        while(continueOptimizing) {
+            JmmVisitorForConstFolding jmmVisitorForConstFolding = new JmmVisitorForConstFolding();
+            jmmVisitorForConstFolding.visit(semanticsResult.getRootNode());
+            continueOptimizing = jmmVisitorForConstFolding.hasOptimized();
+            JmmVisitorForConstPropagation jmmVisitorForConstPropagation = new JmmVisitorForConstPropagation();
+            jmmVisitorForConstPropagation.visit(semanticsResult.getRootNode());
+            continueOptimizing = continueOptimizing || jmmVisitorForConstPropagation.hasOptimized();
+        }
+        return semanticsResult;
+    }
     @Override
     public OllirResult optimize(OllirResult ollirResult){
         if(ollirResult.getConfig().containsKey("registerAllocation")){
-            ClassUnit ollirClass = ollirResult.getOllirClass();
-            ollirClass.buildCFGs();
+            int nrRegisters = Integer.parseInt(ollirResult.getConfig().get("registerAllocation"));
+            if(nrRegisters>=0) {
+                ClassUnit ollirClass = ollirResult.getOllirClass();
+                ollirClass.buildCFGs();
 
-            for (Method method : ollirClass.getMethods()) {
-                MethodVisitor visitor = new MethodVisitor(method, Integer.parseInt(ollirResult.getConfig().get("registerAllocation")));
-                visitor.visit();
-                if (visitor.insufficientRegisters()) {
-                    ollirResult.getReports().add(new Report(ReportType.ERROR, Stage.OPTIMIZATION, -1, -1, "Not enough registers"));
-                    break;
+                for (Method method : ollirClass.getMethods()) {
+                    MethodVisitor visitor = new MethodVisitor(method,nrRegisters);
+                    visitor.visit();
+                    if (visitor.insufficientRegisters()) {
+                        ollirResult.getReports().add(new Report(ReportType.ERROR, Stage.OPTIMIZATION, -1, -1, "Not enough registers"));
+                        break;
+                    }
                 }
             }
         }
