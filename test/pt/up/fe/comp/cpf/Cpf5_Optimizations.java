@@ -100,7 +100,7 @@ public class Cpf5_Optimizations {
     @Test
     public void section1_InstSelection_iinc() {
         JasminResult jasminResult = getJasminResult("inst_selection/InstSelection_iinc.jmm");
-        CpUtils.matches(jasminResult, "iinc\\s+\\w+\\s+1");
+        CpUtils.matches(    jasminResult, "iinc\\s+\\w+\\s+1");
 
     }
 
