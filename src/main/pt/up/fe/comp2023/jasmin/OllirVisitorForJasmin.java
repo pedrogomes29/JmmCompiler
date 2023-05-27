@@ -633,6 +633,8 @@ public class OllirVisitorForJasmin{
                 Element element = ((SingleOpInstruction) instruction).getSingleOperand();
                 if (element instanceof LiteralElement){
                     jasmincodeForIntegerVariable(result, Integer.parseInt(((LiteralElement) element).getLiteral()));
+                } else {
+                    getLoadInstruction(result, element, localVariable);
                 }
             } else {
                 result.append(getInstruction(instruction, localVariable));
