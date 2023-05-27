@@ -2,7 +2,6 @@ package pt.up.fe.comp2023.ollir;
 
 import org.specs.comp.ollir.ClassUnit;
 import org.specs.comp.ollir.Method;
-import org.specs.comp.ollir.Node;
 import pt.up.fe.comp.jmm.analysis.JmmSemanticsResult;
 import pt.up.fe.comp.jmm.analysis.table.Symbol;
 import pt.up.fe.comp.jmm.ollir.JmmOptimization;
@@ -12,6 +11,7 @@ import pt.up.fe.comp.jmm.report.ReportType;
 import pt.up.fe.comp.jmm.report.Stage;
 import pt.up.fe.comp2023.constFolding.JmmVisitorForConstFolding;
 import pt.up.fe.comp2023.constPropagation.JmmVisitorForConstPropagation;
+import pt.up.fe.comp2023.registerAllocation.MethodVisitor;
 import pt.up.fe.comp2023.symbolTable.JmmSymbolTable;
 import java.util.List;
 import java.util.Objects;
