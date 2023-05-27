@@ -1,13 +1,10 @@
-class RegAlloc {
-    public int soManyRegisters(int arg){
-        int x;
-        if(true)
-            x = 1;
-        else
-            x=2;
-        return x;
-    }
-
-	public static void main(String[] args) {
+class PropSimple {
+    public int foo(){
+	  int a;
+	  a = 10 + 3;
+	  return a;
 	}
+    public static void main(String[] args) {
+
+    }
 }

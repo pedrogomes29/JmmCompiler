@@ -9,6 +9,13 @@ public class JmmVisitorForConstFolding extends PostorderJmmVisitor<Void, Void> {
     @Override
     protected void buildVisitor() {
         this.addVisit("BinaryOp", this::visitBinaryOp);
+        this.setDefaultVisit(this::defaultVisit);
+
+    }
+
+    private Void defaultVisit(JmmNode jmmNode, Void unused) {
+        visitAllChildren(jmmNode, unused);
+        return null;
     }
 
     private Void visitBinaryOp(JmmNode jmmNode, Void unused) {
