@@ -78,15 +78,14 @@ public class OllirVisitorForJasmin{
     }
     public static int calculateLimitLocals(Method method) {
         HashMap<String,Descriptor> varTable = method.getVarTable();
-        Set<Integer> virtualRegs = new HashSet<>();
+        int lastRegister = -1;
         if(!method.isStaticMethod())
-            virtualRegs.add(0);
-
+            lastRegister = 0;
         for (Descriptor descriptor : varTable.values()) {
-            virtualRegs.add(descriptor.getVirtualReg());
+            lastRegister = Math.max(lastRegister,descriptor.getVirtualReg());
         }
 
-        return virtualRegs.size();
+        return lastRegister + 1;
     }
     public StringBuilder visitMethod(Method method) {
         StringBuilder result = new StringBuilder();
