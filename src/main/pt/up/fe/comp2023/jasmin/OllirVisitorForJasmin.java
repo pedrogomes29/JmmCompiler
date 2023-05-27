@@ -570,6 +570,26 @@ public class OllirVisitorForJasmin{
             OperationType operationType = binaryOpInstruction.getOperation().getOpType();
             if (operationType.equals(ANDB)){
                 result.append(getInstruction(instruction, localVariable));
+                Element lhs = binaryOpInstruction.getLeftOperand();
+                Element rhs = binaryOpInstruction.getRightOperand();
+                boolean leftIsLiteral = false;
+                boolean rightIsLiteral = false;
+
+                if (lhs instanceof  LiteralElement) {
+                    leftIsLiteral = true;
+                } else if (rhs instanceof  LiteralElement) {
+                    rightIsLiteral = true;
+                }
+                if (leftIsLiteral) {
+                    jasmincodeForIntegerVariable(result,Integer.parseInt(((LiteralElement) lhs).getLiteral()));
+                    getLoadInstruction(result,rhs, localVariable);
+                 } else if  (rightIsLiteral){
+                    jasmincodeForIntegerVariable(result,Integer.parseInt(((LiteralElement) rhs).getLiteral()));
+                    getLoadInstruction(result,lhs,localVariable);
+                 } else {
+                    getLoadInstruction(result,lhs,localVariable);
+                    getLoadInstruction(result,rhs,localVariable);
+               }
                 result.append("\tifne ").append(condBranchInstruction.getLabel()).append("\n");
             } else if (operationType.equals(LTH)) {
                 Element lhs = binaryOpInstruction.getLeftOperand();
