@@ -90,24 +90,13 @@ public class MethodVisitor {
         }
         liveInLiveOut();
         InterferanceGraph interferanceGraph = new InterferanceGraph(def, use, in, out);
-        TreeSet<Integer> availableRegisters = new TreeSet<>();
-        int nrRegistersAlreadyTaken = method.isStaticMethod()?0:1;
-        for(int i=nrRegistersAlreadyTaken;i<maxNrRegisters;i++){
-            availableRegisters.add(i);
-        }
-        for(Element var :method.getParams()){
-            if(var instanceof Operand operand) {
-                availableRegisters.remove(method.getVarTable().get(operand.getName()).getVirtualReg());
-                nrRegistersAlreadyTaken++;
-            }
-        }
         if(maxNrRegisters>0) {
-            varToRegister = interferanceGraph.colorGraph(availableRegisters,maxNrRegisters-nrRegistersAlreadyTaken);
+            varToRegister = interferanceGraph.colorGraph(method,maxNrRegisters);
         }
         else{
             int currentMax = 0;
             while(varToRegister == null)
-                varToRegister = interferanceGraph.colorGraph(availableRegisters,currentMax++-nrRegistersAlreadyTaken);
+                varToRegister = interferanceGraph.colorGraph(method,currentMax++);
         }
         if(varToRegister!=null) {
             replaceVarsByRegisters();

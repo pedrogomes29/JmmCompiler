@@ -652,8 +652,9 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
     }
 
     private String dealWithBoolean (JmmNode jmmNode, String s){
-        jmmNode.put("var", jmmNode.get("value") + ".bool");
-        return jmmNode.get("value") + ".bool";
+        int value = Objects.equals(jmmNode.get("value"), "true") ?1:0;
+        jmmNode.put("var", value + ".bool");
+        return value + ".bool";
     }
 
 

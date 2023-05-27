@@ -78,15 +78,14 @@ public class OllirVisitorForJasmin{
     }
     public static int calculateLimitLocals(Method method) {
         HashMap<String,Descriptor> varTable = method.getVarTable();
-        Set<Integer> virtualRegs = new HashSet<>();
+        int lastRegister = -1;
         if(!method.isStaticMethod())
-            virtualRegs.add(0);
-
+            lastRegister = 0;
         for (Descriptor descriptor : varTable.values()) {
-            virtualRegs.add(descriptor.getVirtualReg());
+            lastRegister = Math.max(lastRegister,descriptor.getVirtualReg());
         }
 
-        return virtualRegs.size();
+        return lastRegister + 1;
     }
     public StringBuilder visitMethod(Method method) {
         StringBuilder result = new StringBuilder();
@@ -571,8 +570,6 @@ public class OllirVisitorForJasmin{
             OperationType operationType = binaryOpInstruction.getOperation().getOpType();
             if (operationType.equals(ANDB)){
                 result.append(getInstruction(instruction, localVariable));
-                result.append("\tifne ").append(condBranchInstruction.getLabel()).append("\n");
-            } else if (operationType.equals(LTH)) {
                 Element lhs = binaryOpInstruction.getLeftOperand();
                 Element rhs = binaryOpInstruction.getRightOperand();
                 boolean leftIsLiteral = false;
@@ -586,8 +583,30 @@ public class OllirVisitorForJasmin{
                 if (leftIsLiteral) {
                     jasmincodeForIntegerVariable(result,Integer.parseInt(((LiteralElement) lhs).getLiteral()));
                     getLoadInstruction(result,rhs, localVariable);
+                 } else if  (rightIsLiteral){
+                    jasmincodeForIntegerVariable(result,Integer.parseInt(((LiteralElement) rhs).getLiteral()));
+                    getLoadInstruction(result,lhs,localVariable);
+                 } else {
+                    getLoadInstruction(result,lhs,localVariable);
+                    getLoadInstruction(result,rhs,localVariable);
+               }
+                result.append("\tifne ").append(condBranchInstruction.getLabel()).append("\n");
+            } else if (operationType.equals(LTH)) {
+                Element lhs = binaryOpInstruction.getLeftOperand();
+                Element rhs = binaryOpInstruction.getRightOperand();
+                boolean leftIsLiteral = false;
+                boolean rightIsLiteral = false;
+
+                if (lhs instanceof  LiteralElement) {
+                    leftIsLiteral = true;
+                } else if (rhs instanceof  LiteralElement) {
+                    rightIsLiteral = true;
+                }
+                if (leftIsLiteral && ((LiteralElement) lhs).getLiteral().equals("0")) {
+                    jasmincodeForIntegerVariable(result,Integer.parseInt(((LiteralElement) lhs).getLiteral()));
+                    getLoadInstruction(result,rhs, localVariable);
                     result.append("\tifgt ").append(condBranchInstruction.getLabel()).append("\n");
-                } else if  (rightIsLiteral){
+                } else if (rightIsLiteral && ((LiteralElement) rhs).getLiteral().equals("0")){
                     jasmincodeForIntegerVariable(result,Integer.parseInt(((LiteralElement) rhs).getLiteral()));
                     getLoadInstruction(result,lhs,localVariable);
                     result.append("\tiflt ").append(condBranchInstruction.getLabel()).append("\n");
@@ -633,6 +652,8 @@ public class OllirVisitorForJasmin{
                 Element element = ((SingleOpInstruction) instruction).getSingleOperand();
                 if (element instanceof LiteralElement){
                     jasmincodeForIntegerVariable(result, Integer.parseInt(((LiteralElement) element).getLiteral()));
+                } else {
+                    getLoadInstruction(result, element, localVariable);
                 }
             } else {
                 result.append(getInstruction(instruction, localVariable));

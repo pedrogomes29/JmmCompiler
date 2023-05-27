@@ -1,7 +1,6 @@
 package pt.up.fe.comp2023.ollir;
 
-import org.specs.comp.ollir.Instruction;
-import org.specs.comp.ollir.Node;
+import org.specs.comp.ollir.*;
 
 import java.util.*;
 
@@ -39,7 +38,24 @@ public class InterferanceGraph {
 
     }
 
-    public HashMap<String,Integer> colorGraph(TreeSet<Integer> availableRegisters,int k){
+    public HashMap<String,Integer> colorGraph(Method method, int k){
+        TreeSet<Integer> availableRegisters = new TreeSet<>();
+        int nrRegistersAlreadyTaken = method.isStaticMethod()?0:1;
+        for(int i=nrRegistersAlreadyTaken;i<k;i++){
+            availableRegisters.add(i);
+        }
+        k-=nrRegistersAlreadyTaken;
+
+        for(Element var :method.getParams()){
+            if(var instanceof Operand operand) {
+                availableRegisters.remove(method.getVarTable().get(operand.getName()).getVirtualReg());
+                k--;
+            }
+        }
+
+        if(k<0)
+            return null;
+
         boolean allNodesGTEKEdges = false;
         Stack<String> stack = new Stack<>();
         int visitedNodes = 0;
@@ -62,13 +78,14 @@ public class InterferanceGraph {
             while(!stack.isEmpty()){
                 String currentVar = stack.pop();
                 Vertex currentVertex = contentToNode.get(currentVar);
+                TreeSet<Integer> availableRegistersLocal = new TreeSet<>(availableRegisters);
                 for(Vertex neighborVertex:currentVertex.edges){
                     String neighborVar = neighborVertex.getContent();
                     Integer neighborRegister = varToRegister.get(neighborVar);
                     if(neighborRegister!=null)
-                        availableRegisters.remove(neighborRegister);
+                        availableRegistersLocal.remove(neighborRegister);
                 }
-                varToRegister.put(currentVar,availableRegisters.first());
+                varToRegister.put(currentVar,availableRegistersLocal.first());
             }
             return varToRegister;
         }
