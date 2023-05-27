@@ -117,7 +117,6 @@ public class JmmOptimizationImpl implements JmmOptimization {
                     ollirResult.getReports().add(new Report(ReportType.ERROR, Stage.OPTIMIZATION, -1, -1, "Not enough registers"));
                     break;
                 }
-                method.buildVarTable();
             }
         }
 

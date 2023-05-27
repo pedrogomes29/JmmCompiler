@@ -58,7 +58,9 @@ public class Launcher {
         JmmOptimizationImpl jmmOptimizationImpl = new JmmOptimizationImpl();
         OllirResult ollirResult = jmmOptimizationImpl.toOllir(jmmSemanticsResult);
         ollirResult = jmmOptimizationImpl.optimize(ollirResult);
-        int x = 1;
+        JasminBackend backend = new JasminBackend();
+        JasminResult result = backend.toJasmin(ollirResult);
+        System.out.println(result.getJasminCode());
         /*
         JasminBackend jasminBackend = new JasminBackend();
         JasminResult jasminResult = jasminBackend.toJasmin(ollirResult);

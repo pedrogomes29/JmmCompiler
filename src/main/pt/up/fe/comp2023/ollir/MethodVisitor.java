@@ -16,7 +16,6 @@ public class MethodVisitor {
 
     private HashMap<String,Integer> varToRegister;
 
-    private InterferanceGraph interferanceGraph;
     private boolean notEnoughRegisters;
 
     private int maxNrRegisters;
@@ -33,11 +32,11 @@ public class MethodVisitor {
 
     public void visit(){
         Node rootNode = method.getBeginNode();
+        HashSet<Node> visited = new HashSet<>();
         queue.offer(rootNode);
         while(!queue.isEmpty()){
             Node currentNode = queue.poll();
-            for(Node successor: currentNode.getSuccessors())
-                queue.offer(successor);
+            visited.add(currentNode);
             if(currentNode.getNodeType()==INSTRUCTION){
                 Instruction currentInstruction = (Instruction) currentNode;
                 def.put(currentInstruction,new HashSet<>());
@@ -54,7 +53,7 @@ public class MethodVisitor {
                         dealWithAssign((AssignInstruction) currentInstruction);
                     }
                     case BRANCH -> {
-                        dealWithBranch((OpCondInstruction)currentInstruction);
+                        //do nothing, no variables
                     }
                     case RETURN -> {
                         dealWithReturn((ReturnInstruction)currentInstruction);
@@ -79,9 +78,18 @@ public class MethodVisitor {
                     }
                 }
             }
+            if(currentNode instanceof AssignInstruction instruction && !visited.contains(instruction.getRhs()))
+                queue.offer(instruction.getRhs());
+            else if(currentNode instanceof OpCondInstruction instruction && !visited.contains(instruction.getCondition()))
+                queue.offer(instruction.getCondition());
+
+            for(Node successor: currentNode.getSuccessors()) {
+                if(!visited.contains(successor))
+                    queue.offer(successor);
+            }
         }
         liveInLiveOut();
-        interferanceGraph = new InterferanceGraph(def,use,in,out);
+        InterferanceGraph interferanceGraph = new InterferanceGraph(def, use, in, out);
         if(maxNrRegisters>0) {
             varToRegister = interferanceGraph.colorGraph(maxNrRegisters);
         }
@@ -102,134 +110,11 @@ public class MethodVisitor {
 
 
     public void replaceVarsByRegisters(){
-        Node rootNode = method.getBeginNode();
-        queue.offer(rootNode);
-        while(!queue.isEmpty()){
-            Node currentNode = queue.poll();
-            for(Node successor: currentNode.getSuccessors())
-                queue.offer(successor);
-            if(currentNode.getNodeType()==INSTRUCTION){
-                Instruction currentInstruction = (Instruction) currentNode;
-                def.put(currentInstruction,new HashSet<>());
-                use.put(currentInstruction,new HashSet<>());
-                in.put(currentInstruction,new HashSet<>());
-                out.put(currentInstruction,new HashSet<>());
-
-
-                switch(currentInstruction.getInstType()){
-                    case CALL -> {
-                        replaceVarsByRegistersCall((CallInstruction) currentInstruction);
-                    }
-                    case ASSIGN -> {
-                        replaceVarsByRegistersAssign((AssignInstruction) currentInstruction);
-                    }
-
-                    case RETURN -> {
-                        replaceVarsByRegistersReturn((ReturnInstruction)currentInstruction);
-                    }
-                    case GETFIELD -> {
-                        replaceVarsByRegistersGetField((GetFieldInstruction) currentInstruction);
-                    }
-                    case PUTFIELD -> {
-                        replaceVarsByRegistersPutField((PutFieldInstruction) currentInstruction);
-                    }
-                    case UNARYOPER -> {
-                        replaceVarsByRegistersUnaryOp((UnaryOpInstruction) currentInstruction);
-                    }
-                    case BINARYOPER -> {
-                        replaceVarsByRegistersBinaryOp((BinaryOpInstruction) currentInstruction);
-                    }
-                    case NOPER -> {
-                        replaceVarsByRegistersSingleOp((SingleOpInstruction)currentInstruction);
-                    }
-                    case GOTO -> {
-                        //do nothing, no variables
-                    }
-                    case BRANCH -> {
-                        //do nothing, no variables
-                    }
-                }
-            }
-            if(currentNode instanceof AssignInstruction instruction)
-                queue.offer(instruction.getRhs());
-            else if(currentNode instanceof OpCondInstruction instruction)
-                queue.offer(instruction.getCondition());
-
-            for(Node successor: currentNode.getSuccessors()) {
-                queue.offer(successor);
-            }
+        HashMap<String,Descriptor> varTable = method.getVarTable();
+        for(String var:varToRegister.keySet()){
+            int register = varToRegister.get(var);
+            varTable.get(var).setVirtualReg(register);
         }
-
-    }
-
-
-    private void replaceVarsByRegistersElement(Element element){
-        if(element instanceof Operand operand){
-            Integer register = varToRegister.get(operand.getName());
-            if(register!=null)
-                operand.setName("r_"+ register);
-
-            if(operand instanceof ArrayOperand arrayOperand){
-                for (Element indexElement : arrayOperand.getIndexOperands()) {
-                    if(indexElement instanceof Operand indexOperand){
-                        register = varToRegister.get(indexOperand.getName());
-                        if(register!=null)
-                            indexOperand.setName("r_"+ register);
-                    }
-                }
-            }
-        }
-
-    }
-
-    private void replaceVarsByRegistersCall(CallInstruction instruction){
-        Element firstArg = instruction.getFirstArg();
-        Element secondArg = instruction.getSecondArg();
-
-        replaceVarsByRegistersElement(firstArg);
-
-        if(secondArg!=null)
-            replaceVarsByRegistersElement(secondArg);
-
-
-        for(Element element: instruction.getListOfOperands())
-            replaceVarsByRegistersElement(element);
-    }
-    private void replaceVarsByRegistersAssign(AssignInstruction instruction){
-        Element dest = instruction.getDest();
-        replaceVarsByRegistersElement(dest);
-    }
-    private void replaceVarsByRegistersReturn(ReturnInstruction instruction){
-        Element operand = instruction.getOperand();
-        if(operand!=null)
-            replaceVarsByRegistersElement(operand);
-    }
-    private void replaceVarsByRegistersGetField(GetFieldInstruction instruction){
-        Element firstElement = instruction.getFirstOperand();
-        replaceVarsByRegistersElement(firstElement);
-    }
-
-    private void replaceVarsByRegistersPutField(PutFieldInstruction instruction){
-        Element firstElement = instruction.getFirstOperand();
-        Element thirdElement = instruction.getThirdOperand();
-
-        replaceVarsByRegistersElement(firstElement);
-        replaceVarsByRegistersElement(thirdElement);
-    }
-    private void replaceVarsByRegistersUnaryOp(UnaryOpInstruction instruction){
-        Element element = instruction.getOperand();
-        replaceVarsByRegistersElement(element);
-    }
-    private void replaceVarsByRegistersBinaryOp(BinaryOpInstruction instruction){
-        Element leftOperand = instruction.getLeftOperand();
-        Element rightOperand = instruction.getRightOperand();
-
-        replaceVarsByRegistersElement(leftOperand);
-        replaceVarsByRegistersElement(rightOperand);
-    }
-    private void replaceVarsByRegistersSingleOp(SingleOpInstruction instruction){
-        Element element = instruction.getSingleOperand();
-        replaceVarsByRegistersElement(element);
     }
 
     private void liveInLiveOut(){
@@ -237,9 +122,11 @@ public class MethodVisitor {
         boolean changed = true;
         while(changed){
             changed = false;
+            HashSet<Node> visited = new HashSet<>();
             queue.offer(rootNode);
             while(!queue.isEmpty()){
                 Node currentNode = queue.poll();
+                visited.add(currentNode);
                 if(currentNode.getNodeType()==INSTRUCTION){
                     Instruction currentInstruction = (Instruction) currentNode;
                     HashSet<String> currentOut =  new HashSet<>(out.get(currentInstruction));
@@ -261,17 +148,15 @@ public class MethodVisitor {
                     out.put(currentNode,newOut);
 
                 }
-
-                if(currentNode instanceof AssignInstruction instruction)
+                if(currentNode instanceof AssignInstruction instruction && !visited.contains(instruction.getRhs()))
                     queue.offer(instruction.getRhs());
-                else if(currentNode instanceof OpCondInstruction instruction)
+                else if(currentNode instanceof OpCondInstruction instruction && !visited.contains(instruction.getCondition()))
                     queue.offer(instruction.getCondition());
 
                 for(Node successor: currentNode.getSuccessors()) {
-                    queue.offer(successor);
+                    if(!visited.contains(successor))
+                        queue.offer(successor);
                 }
-
-
             }
         }
     }
@@ -288,8 +173,6 @@ public class MethodVisitor {
             for(Element indexElement:arrayOperand.getIndexOperands())
                 dealWithElement(instruction,indexElement);
         }
-
-        queue.offer(instruction.getRhs());
     }
 
     private void dealWithUnaryOp(UnaryOpInstruction instruction){
@@ -303,11 +186,6 @@ public class MethodVisitor {
         dealWithElement(instruction,leftElement);
         dealWithElement(instruction,rightElement);
     }
-
-    private void dealWithBranch(OpCondInstruction instruction){
-        queue.offer(instruction.getCondition());
-    }
-
 
     private boolean isNotArrayThisOrLiteral(Element element){
         if(element.isLiteral()){
