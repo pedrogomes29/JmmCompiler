@@ -57,10 +57,8 @@ public class Launcher {
         System.out.println(jmmSemanticsResult.getRootNode().toTree());
         JmmOptimizationImpl jmmOptimizationImpl = new JmmOptimizationImpl();
         OllirResult ollirResult = jmmOptimizationImpl.toOllir(jmmSemanticsResult);
-        System.out.println(parserResult.toString());
-        ollirResult.getOllirClass().buildCFGs();
-        ollirResult.getOllirClass().outputCFGs();
-
+        ollirResult = jmmOptimizationImpl.optimize(ollirResult);
+        int x = 1;
         /*
         JasminBackend jasminBackend = new JasminBackend();
         JasminResult jasminResult = jasminBackend.toJasmin(ollirResult);
@@ -72,59 +70,51 @@ public class Launcher {
 
     private static Map<String, String> parseArgs(String[] args) {
         SpecsLogs.info("Executing with args: " + Arrays.toString(args));
-        if (args.length == 2) {
-            if (args[1].equals("-o")) {
-                Map<String, String> config = new HashMap<>();
-                config.put("inputFile", args[0]);
-                config.put("optimize", "true");
-                config.put("registerAllocation", "-1");
-                config.put("debug", "false");
-
-                return config;
-            }
-            if (args[1].startsWith("-r")) {
-                Map<String, String> config = new HashMap<>();
+        Map<String, String> config = new HashMap<>();
+        switch (args.length) {
+            case 1 -> {
                 config.put("inputFile", args[0]);
                 config.put("optimize", "false");
-                config.put("registerAllocation", args[1].substring(3));
+                config.put("registerAllocation", "-1");
                 config.put("debug", "false");
-
                 return config;
             }
-        }
-        if (args.length == 3) {
-            if (args[1].equals("-o") && args[2].startsWith("-r")) {
-                Map<String, String> config = new HashMap<>();
-                config.put("inputFile", args[0]);
-                config.put("optimize", "true");
-                config.put("registerAllocation", args[2].substring(3));
-                config.put("debug", "false");
+            case 2 -> {
+                if (args[1].equals("-o")) {
+                    config.put("inputFile", args[0]);
+                    config.put("optimize", "true");
+                    config.put("registerAllocation", "-1");
+                    config.put("debug", "false");
 
-                return config;
+                    return config;
+                } else if (args[1].startsWith("-r")) {
+                    config.put("inputFile", args[0]);
+                    config.put("optimize", "false");
+                    config.put("registerAllocation", args[1].substring(3));
+                    config.put("debug", "false");
+
+                    return config;
+                }
             }
-            if (args[2].equals("-o") && args[1].startsWith("-r")) {
-                Map<String, String> config = new HashMap<>();
-                config.put("inputFile", args[0]);
-                config.put("optimize", "true");
-                config.put("registerAllocation", args[1].substring(3));
-                config.put("debug", "false");
+            case 3 -> {
+                if (args[1].equals("-o") && args[2].startsWith("-r")) {
+                    config.put("inputFile", args[0]);
+                    config.put("optimize", "true");
+                    config.put("registerAllocation", args[2].substring(3));
+                    config.put("debug", "false");
 
-                return config;
+                    return config;
+                }
+                else if (args[2].equals("-o") && args[1].startsWith("-r")) {
+                    config.put("inputFile", args[0]);
+                    config.put("optimize", "true");
+                    config.put("registerAllocation", args[1].substring(3));
+                    config.put("debug", "false");
+
+                    return config;
+                }
             }
         }
-        else if (args.length == 1) {
-            Map<String, String> config = new HashMap<>();
-            config.put("inputFile", args[0]);
-            config.put("optimize", "false");
-            config.put("registerAllocation", "-1");
-            config.put("debug", "false");
-
-            return config;
-        }
-        else {
-            throw new RuntimeException("Provided arguments are not valid.");
-        }
-        return null;
+        throw new RuntimeException("Provided arguments are not valid.");
     }
-
 }
