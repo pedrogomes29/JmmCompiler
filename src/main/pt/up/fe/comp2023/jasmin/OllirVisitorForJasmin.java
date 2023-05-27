@@ -632,6 +632,10 @@ public class OllirVisitorForJasmin{
     }
 
     public void getLoadInstruction(StringBuilder result, Element element, HashMap<String, Descriptor> varTable){
+        if (element.isLiteral()){
+            jasmincodeForIntegerVariable(result, Integer.parseInt(((LiteralElement) element).getLiteral()));
+            return;
+        }
         Operand op = (Operand) element;
         ElementType type = op.getType().getTypeOfElement();
         if (type.equals(OBJECTREF) || type.equals(STRING)){
