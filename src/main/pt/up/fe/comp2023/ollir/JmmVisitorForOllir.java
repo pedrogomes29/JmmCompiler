@@ -403,7 +403,7 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
             arrayToAccess = temp_var; //so the array assignment is done to the temp variable
             temp_var = String.format("%s.%s", temp_var,arrayTypeString);
             code.append("\t\t").append(temp_var).append(" :=.").append(arrayTypeString).
-                    append(" getfield(this, ").append(temp_var).append(".").append(arrayTypeString).append(").").
+                    append(" getfield(this, ").append(temp_var).append(").").
                     append(arrayTypeString).append(";\n");
 
         }
@@ -439,7 +439,7 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
 
         if(Objects.equals(jmmNode.get("field"), "true")){
             code.append("\t\tputfield(this, ").append(arrayName).append(".").append(arrayTypeString).append(", ").
-                    append(arrayToAccess).append(arrayTypeString).append(").V;\n");
+                    append(arrayToAccess).append(".").append(arrayTypeString).append(").V;\n");
         }
 
         return code.toString();
@@ -680,14 +680,14 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
             jmmNode.put("previousCode", "");
             jmmNode.put("rhsCode", rhsCode);
             jmmNode.put("var", temp_var);
-            return "\t\t" + temp_var + " :=" + arrayTypeOllir + " " +  rhsCode+"\n";
+            return "\t\t" + temp_var + " :=." + arrayTypeOllir + " " +  rhsCode+";\n";
         }
         else{
             String rhsCode = "new(array, "+ lengthNode.get("var") +")."+arrayTypeOllir;
             jmmNode.put("previousCode", lengthCode);
             jmmNode.put("rhsCode", rhsCode);
             jmmNode.put("var", temp_var);
-            return lengthCode + "\t\t" + temp_var + " :=" + arrayTypeOllir + " " +  rhsCode + "\n";
+            return lengthCode + "\t\t" + temp_var + " :=." + arrayTypeOllir + " " +  rhsCode + ";\n";
         }
     }
 
