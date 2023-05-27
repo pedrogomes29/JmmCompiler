@@ -59,13 +59,22 @@ public class OllirVisitorForJasmin{
         }else{
             result.append(field.getFieldAccessModifier().toString().toLowerCase()).append(" ");
         }
-        result.append(field.getFieldName());
-        if (field.getFieldType().getTypeOfElement().name().equals("INT32")) {
-            result.append(" I");
-        }   else if (field.getFieldType().getTypeOfElement().name().equals("BOOLEAN")){
-            result.append(" Z");
+        result.append(field.getFieldName()).append(" ");
+        ElementType elementType = field.getFieldType().getTypeOfElement();
+        if (elementType.equals(ARRAYREF)){
+            result.append("[");
+            elementType = ((ArrayType) field.getFieldType()).getArrayType();
         }
 
+        if (elementType.name().equals("INT32")) {
+            result.append("I");
+        }   else if (elementType.name().equals("BOOLEAN")){
+            result.append("Z");
+        } else if (elementType.name().equals("OBJECTREF")){
+            result.append("L").append(((ClassType) field.getFieldType()).getName()).append(";");
+        } else if (elementType.name().equals("VOID")){
+            result.append("V");
+        }
         return result;
     }
 
@@ -645,7 +654,7 @@ public class OllirVisitorForJasmin{
             UnaryOpInstruction unaryOpInstruction = (UnaryOpInstruction) instruction;
             if (unaryOpInstruction.getOperation().getOpType().equals(NOTB)) {
                 getLoadInstruction(result,unaryOpInstruction.getOperand(),localVariable);
-                result.append("\tifne ").append(condBranchInstruction.getLabel()).append("\n");
+                result.append("\tifeq ").append(condBranchInstruction.getLabel()).append("\n");
             }
         } else {
             if (instruction instanceof SingleOpInstruction){
