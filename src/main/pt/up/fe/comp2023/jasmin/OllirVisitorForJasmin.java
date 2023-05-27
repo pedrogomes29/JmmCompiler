@@ -602,11 +602,11 @@ public class OllirVisitorForJasmin{
                 } else if (rhs instanceof  LiteralElement) {
                     rightIsLiteral = true;
                 }
-                if (leftIsLiteral) {
+                if (leftIsLiteral && ((LiteralElement) lhs).getLiteral().equals("0")) {
                     jasmincodeForIntegerVariable(result,Integer.parseInt(((LiteralElement) lhs).getLiteral()));
                     getLoadInstruction(result,rhs, localVariable);
                     result.append("\tifgt ").append(condBranchInstruction.getLabel()).append("\n");
-                } else if  (rightIsLiteral){
+                } else if (rightIsLiteral && ((LiteralElement) rhs).getLiteral().equals("0")){
                     jasmincodeForIntegerVariable(result,Integer.parseInt(((LiteralElement) rhs).getLiteral()));
                     getLoadInstruction(result,lhs,localVariable);
                     result.append("\tiflt ").append(condBranchInstruction.getLabel()).append("\n");
