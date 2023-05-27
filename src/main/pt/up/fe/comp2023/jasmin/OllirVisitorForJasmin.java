@@ -79,7 +79,14 @@ public class OllirVisitorForJasmin{
         }
         return result;
     }
-
+    public static int calculateLimitLocals(HashMap<String,Descriptor> varTable) {
+        int nrRegisters = 0;
+        for (Descriptor descriptor:varTable.values()) {
+            if(descriptor.getScope()==VarScope.LOCAL)
+                nrRegisters = Math.max(nrRegisters,descriptor.getVirtualReg());
+        }
+        return nrRegisters + 1; //registers start at 0s
+    }
     public StringBuilder visitMethod(Method method) {
         StringBuilder result = new StringBuilder();
         if (method.isConstructMethod()) {
@@ -133,7 +140,10 @@ public class OllirVisitorForJasmin{
             }
 
             HashMap <String, Descriptor> varTable = method.getVarTable();
-            result.append("\t.limit stack 99\n").append("\t.limit locals 99\n");
+
+            int nrRegisters = calculateLimitLocals(varTable);
+            result.append("\t.limit stack 99\n").append("\t.limit locals ").append(nrRegisters).append("\n");
+
             for (Instruction instruction : method.getInstructions()) {
                 for (Map.Entry<String, Instruction> label : method.getLabels().entrySet()) {
                     if (label.getValue().equals(instruction)) {
