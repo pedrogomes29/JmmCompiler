@@ -57,7 +57,8 @@ public class Launcher {
         JmmAnalysisImpl jmmAnalysisImpl = new JmmAnalysisImpl();
         JmmSemanticsResult jmmSemanticsResult = jmmAnalysisImpl.semanticAnalysis(parserResult);
         JmmVisitorForConstFolding jmmVisitorForConstFolding = new JmmVisitorForConstFolding();
-        jmmVisitorForConstFolding.visit(jmmSemanticsResult.getRootNode());
+        if(config.get("optimize").equals("true"))
+            jmmVisitorForConstFolding.visit(jmmSemanticsResult.getRootNode());
         System.out.println(jmmSemanticsResult.getRootNode().toTree());
         JmmOptimizationImpl jmmOptimizationImpl = new JmmOptimizationImpl();
         OllirResult ollirResult = jmmOptimizationImpl.toOllir(jmmSemanticsResult);
