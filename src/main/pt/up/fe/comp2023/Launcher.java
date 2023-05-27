@@ -64,14 +64,14 @@ public class Launcher {
         JasminResult jasminResult = jasminBackend.toJasmin(ollirResult);
 
         System.out.println(jasminResult.getJasminCode());
-         */
+        */
     }
 
 
     private static Map<String, String> parseArgs(String[] args) {
         SpecsLogs.info("Executing with args: " + Arrays.toString(args));
         Map<String, String> config = new HashMap<>();
-        switch (args.length){
+        switch (args.length) {
             case 1 -> {
                 config.put("inputFile", args[0]);
                 config.put("optimize", "false");
@@ -79,7 +79,7 @@ public class Launcher {
                 config.put("debug", "false");
                 return config;
             }
-            case 2 ->{
+            case 2 -> {
                 if (args[1].equals("-o")) {
                     config.put("inputFile", args[0]);
                     config.put("optimize", "true");
@@ -87,8 +87,7 @@ public class Launcher {
                     config.put("debug", "false");
 
                     return config;
-                }
-                else if (args[1].startsWith("-r")) {
+                } else if (args[1].startsWith("-r")) {
                     config.put("inputFile", args[0]);
                     config.put("optimize", "false");
                     config.put("registerAllocation", args[1].substring(3));
@@ -106,7 +105,7 @@ public class Launcher {
 
                     return config;
                 }
-                if (args[2].equals("-o") && args[1].startsWith("-r")) {
+                else if (args[2].equals("-o") && args[1].startsWith("-r")) {
                     config.put("inputFile", args[0]);
                     config.put("optimize", "true");
                     config.put("registerAllocation", args[1].substring(3));
@@ -116,8 +115,6 @@ public class Launcher {
                 }
             }
         }
-
         throw new RuntimeException("Provided arguments are not valid.");
     }
-
 }

@@ -229,7 +229,7 @@ public class Cpf4_Jasmin {
 
     /*checks if array is being passed correctly as an argument to a function (index of aload > 1)*/
     @Test
-    public void section5_Arrays_As_Arg_Aload() {
+      public void section5_Arrays_As_Arg_Aload() {
         var jasminResult = getJasminResult("arrays/ArrayAsArgCode.ollir");
         var methodCode = CpUtils.getJasminMethod(jasminResult);
 
