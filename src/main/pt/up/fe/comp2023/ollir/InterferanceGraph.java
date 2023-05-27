@@ -39,7 +39,7 @@ public class InterferanceGraph {
 
     }
 
-    public HashMap<String,Integer> colorGraph(int k){
+    public HashMap<String,Integer> colorGraph(TreeSet<Integer> availableRegisters,int k){
         boolean allNodesGTEKEdges = false;
         Stack<String> stack = new Stack<>();
         int visitedNodes = 0;
@@ -62,17 +62,13 @@ public class InterferanceGraph {
             while(!stack.isEmpty()){
                 String currentVar = stack.pop();
                 Vertex currentVertex = contentToNode.get(currentVar);
-                TreeSet<Integer> registersAvailable = new TreeSet<>();
-                for(int register=0;register<k;register++){
-                    registersAvailable.add(register);
-                }
                 for(Vertex neighborVertex:currentVertex.edges){
                     String neighborVar = neighborVertex.getContent();
                     Integer neighborRegister = varToRegister.get(neighborVar);
                     if(neighborRegister!=null)
-                        registersAvailable.remove(neighborRegister);
+                        availableRegisters.remove(neighborRegister);
                 }
-                varToRegister.put(currentVar,registersAvailable.first());
+                varToRegister.put(currentVar,availableRegisters.first());
             }
             return varToRegister;
         }

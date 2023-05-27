@@ -10,10 +10,7 @@ import javax.swing.*;
 import java.beans.Statement;
 import java.lang.reflect.Array;
 import java.security.interfaces.ECKey;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.specs.comp.ollir.CallType.*;
 import static org.specs.comp.ollir.ElementType.*;
@@ -79,13 +76,17 @@ public class OllirVisitorForJasmin{
         }
         return result;
     }
-    public static int calculateLimitLocals(HashMap<String,Descriptor> varTable) {
-        int nrRegisters = 0;
-        for (Descriptor descriptor:varTable.values()) {
-            if(descriptor.getScope()==VarScope.LOCAL)
-                nrRegisters = Math.max(nrRegisters,descriptor.getVirtualReg());
+    public static int calculateLimitLocals(Method method) {
+        HashMap<String,Descriptor> varTable = method.getVarTable();
+        Set<Integer> virtualRegs = new HashSet<>();
+        if(!method.isStaticMethod())
+            virtualRegs.add(0);
+
+        for (Descriptor descriptor : varTable.values()) {
+            virtualRegs.add(descriptor.getVirtualReg());
         }
-        return nrRegisters + 1; //registers start at 0s
+
+        return virtualRegs.size();
     }
     public StringBuilder visitMethod(Method method) {
         StringBuilder result = new StringBuilder();
@@ -141,7 +142,7 @@ public class OllirVisitorForJasmin{
 
             HashMap <String, Descriptor> varTable = method.getVarTable();
 
-            int nrRegisters = calculateLimitLocals(varTable);
+            int nrRegisters = calculateLimitLocals(method);
             result.append("\t.limit stack 99\n").append("\t.limit locals ").append(nrRegisters).append("\n");
 
             for (Instruction instruction : method.getInstructions()) {
