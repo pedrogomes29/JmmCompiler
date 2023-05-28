@@ -2,6 +2,32 @@
 
 For this project, you need to install [Java](https://jdk.java.net/), [Gradle](https://gradle.org/install/), and [Git](https://git-scm.com/downloads/) (and optionally, a [Git GUI client](https://git-scm.com/downloads/guis), such as TortoiseGit or GitHub Desktop). Please check the [compatibility matrix](https://docs.gradle.org/current/userguide/compatibility.html) for Java and Gradle versions.
 
+## Group Members
+> João Reis - 202007227
+> Pedro Gomes - 202006322
+> Rui Pires - 202008252
+
+## Work distribuiton
+
+Each member of the group contributed approximately 1/3 to the project
+
+## Self-assessment
+
+20
+
+## Extra elements
+
+When generating OLLIR, we reduce the number of registers needed when an instruction accepts another instruction as it's paramater.  For example, when jmm has the instruction x = 1 + 2; , instead of generating:
+t1.i32 :=.i32 1.i32 + 2.i32;
+x.i32 :=.i32 t1.i32;
+we generate
+x.i32 :=.i32 1.i32 + 2.i32;
+
+Same goes for conditions.
+
+In addition, we implemented short circuits for the conditional jumps.
+
+
 ## Project setup
 
 There are some import folders in the repository. Your development source code is inside the subfolder named ``src/main``. Specifically, your initially application is in the folder ``src/main/pt/up/fe/comp2023``, and the grammar is in the subfolder ``src/main/antlr/comp2023/grammar``. Finally, the subfolder named ``test`` contains your unit tests.
