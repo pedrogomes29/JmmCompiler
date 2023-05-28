@@ -106,7 +106,6 @@ public class OllirVisitorForJasmin {
         StringBuilder result = new StringBuilder();
         if (method.isConstructMethod()) {
             result.append(".method public <init>()V\n");
-            result.append("\t.limit stack 1\n").append("\t.limit locals 1").append("\n");
             result.append("\taload_0\n");
             result.append("\tinvokespecial ");
             if (method.getOllirClass().getSuperClass() != null) {
