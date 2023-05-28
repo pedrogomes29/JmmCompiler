@@ -579,8 +579,11 @@ public class OllirVisitorForJasmin {
         updateLimitOfStack(1);
         if (firstOperand.getType().getTypeOfElement().equals(THIS)){
             result.append("\taload_0\n");
-        } else {
+        } else if (firstOperand.getType().getTypeOfElement().equals(OBJECTREF) || firstOperand.getType().getTypeOfElement().equals(ARRAYREF)) {
             result.append(legalizeInstruction("\taload",localVariable.get(((Operand)callInstruction.getFirstArg()).getName()).getVirtualReg())).append("\n");
+        }
+        else {
+            result.append(legalizeInstruction("\tiload",localVariable.get(((Operand)callInstruction.getFirstArg()).getName()).getVirtualReg())).append("\n");
         }
         for (Element operand: callInstruction.getListOfOperands()){
             if (operand.isLiteral()){
