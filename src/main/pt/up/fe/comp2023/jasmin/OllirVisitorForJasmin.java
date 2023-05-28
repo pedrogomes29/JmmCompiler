@@ -216,8 +216,10 @@ public class OllirVisitorForJasmin {
         StringBuilder result = new StringBuilder();
         Instruction rhs = assign.getRhs();
         if (rhs instanceof SingleOpInstruction && ((SingleOpInstruction) rhs).getSingleOperand().isLiteral()) {
-            Integer value = Integer.parseInt(((LiteralElement) ((SingleOpInstruction) rhs).getSingleOperand()).getLiteral());
-            jasmincodeForIntegerVariable(result, value);
+            if (!(assign.getDest() instanceof  ArrayOperand)) {
+                Integer value = Integer.parseInt(((LiteralElement) ((SingleOpInstruction) rhs).getSingleOperand()).getLiteral());
+                jasmincodeForIntegerVariable(result, value);
+            }
         } else if (rhs instanceof SingleOpInstruction) {
             ElementType type = ((SingleOpInstruction) rhs).getSingleOperand().getType().getTypeOfElement();
             String variableName = ((Operand) ((SingleOpInstruction) rhs).getSingleOperand()).getName();
