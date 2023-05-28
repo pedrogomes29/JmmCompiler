@@ -136,6 +136,8 @@ public class OllirVisitorForJasmin {
                     result.append("Ljava/lang/String;");
                 } else if (elementTypeName.equals("OBJECTREF")) {
                     result.append("L").append(((ClassType) arg.getType()).getName()).append(";");
+                } else if (elementTypeName.equals("VOID")) {
+                    result.append("V");
                 }
             }
 
