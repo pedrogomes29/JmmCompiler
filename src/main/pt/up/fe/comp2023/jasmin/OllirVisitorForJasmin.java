@@ -147,13 +147,13 @@ public class OllirVisitorForJasmin {
                 result.append("[");
                 returnTypeOfElement = ((ArrayType) method.getReturnType()).getArrayType();
             }
-            if (returnTypeOfElement.name().equals("BOOLEAN")) {
+            if (returnTypeOfElement.equals(BOOLEAN)) {
                 result.append("Z").append("\n");
-            } else if (returnTypeOfElement.name().equals("INT32")) {
+            } else if (returnTypeOfElement.equals(INT32)) {
                 result.append("I").append("\n");
-            } else if (returnTypeOfElement.name().equals("VOID")) {
+            } else if (returnTypeOfElement.equals(VOID)) {
                 result.append("V").append("\n");
-            } else if (returnTypeOfElement.name().equals("OBJECTREF")) {
+            } else if (returnTypeOfElement.equals(OBJECTREF)) {
                 result.append("L").append(((ClassType) method.getReturnType()).getName()).append(";\n");
             }
 
