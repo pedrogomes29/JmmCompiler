@@ -1,10 +1,19 @@
-class PropSimple {
+class PropWithLoop {
     public int foo(){
 	  int a;
+	  int i;
+	  int res;
 	  a = 10;
-	  return a+3;
+	  i = 0;
+	  while (i < a){
+	    if(i<5)
+	        i=i+2;
+        else
+            i=i+1;
+	  }
+	  res = i*a;
+	  return res;
 	}
-    public static void main(String[] args) {
-
-    }
+	public static void main(String[] args) {
+	}
 }

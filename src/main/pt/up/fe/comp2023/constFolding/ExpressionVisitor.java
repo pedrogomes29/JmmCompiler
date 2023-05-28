@@ -25,7 +25,6 @@ public class ExpressionVisitor {
                 else {
                     constantNode.put("value", "false");
                 }
-                constantNode.put("value", String.valueOf(resultValue));
                 constantNode.putObject("type",new Type("boolean",false));
                 node.replace(constantNode);
 
