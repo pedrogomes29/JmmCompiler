@@ -237,7 +237,31 @@ public class OllirVisitorForJasmin {
                 result.append(legalizeInstruction("\tiload", localVariable.get(variableName).getVirtualReg())).append("\n");
             }
         } else if (rhs instanceof BinaryOpInstruction) {
-            result.append(visitBinaryOpInstruction((BinaryOpInstruction) rhs, localVariable));
+            System.out.println(((BinaryOpInstruction) rhs).getLeftOperand());
+            System.out.println(assign.getDest());
+            if(assign.getDest().toString().equals(((BinaryOpInstruction) rhs).getLeftOperand().toString()) && ((BinaryOpInstruction) rhs).getRightOperand().isLiteral()) {
+                Operand destOperand = (Operand) assign.getDest();
+                if (((BinaryOpInstruction) rhs).getOperation().getOpType() == ADD) {
+                    result.append("\tiinc " + localVariable.get(destOperand.getName()).getVirtualReg() + " " + ((LiteralElement) ((BinaryOpInstruction) rhs).getRightOperand()).getLiteral() + "\n");
+                }
+                if (((BinaryOpInstruction) rhs).getOperation().getOpType() == SUB) {
+                    result.append("\tiinc " + localVariable.get(destOperand.getName()).getVirtualReg() + " -" + ((LiteralElement) ((BinaryOpInstruction) rhs).getRightOperand()).getLiteral() + "\n");
+                }
+                return result;
+            }
+            else if(assign.getDest().toString().equals(((BinaryOpInstruction) rhs).getRightOperand().toString()) && ((BinaryOpInstruction) rhs).getLeftOperand().isLiteral()) {
+                Operand destOperand = (Operand) assign.getDest();
+                if (((BinaryOpInstruction) rhs).getOperation().getOpType() == ADD) {
+                    result.append("\tiinc " + localVariable.get(destOperand.getName()).getVirtualReg() + " " + ((LiteralElement) ((BinaryOpInstruction) rhs).getLeftOperand()).getLiteral() + "\n");
+                }
+                if (((BinaryOpInstruction) rhs).getOperation().getOpType() == SUB) {
+                    result.append("\tiinc " + localVariable.get(destOperand.getName()).getVirtualReg() + " -" + ((LiteralElement) ((BinaryOpInstruction) rhs).getLeftOperand()).getLiteral() + "\n");
+                }
+                return result;
+            }
+            else {
+                result.append(visitBinaryOpInstruction((BinaryOpInstruction) rhs, localVariable));
+            }
         } else if (rhs instanceof CallInstruction) {
             result.append(visitCallInstruction((CallInstruction) rhs, localVariable));
         } else if (rhs instanceof GetFieldInstruction) {
