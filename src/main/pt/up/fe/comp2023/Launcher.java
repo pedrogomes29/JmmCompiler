@@ -54,20 +54,22 @@ public class Launcher {
 
         JmmAnalysisImpl jmmAnalysisImpl = new JmmAnalysisImpl();
         JmmSemanticsResult jmmSemanticsResult = jmmAnalysisImpl.semanticAnalysis(parserResult);
-        System.out.println(jmmSemanticsResult.getRootNode().toTree());
-        JmmOptimizationImpl jmmOptimizationImpl = new JmmOptimizationImpl();
-        jmmSemanticsResult = jmmOptimizationImpl.optimize(jmmSemanticsResult);
-        OllirResult ollirResult = jmmOptimizationImpl.toOllir(jmmSemanticsResult);
-        ollirResult = jmmOptimizationImpl.optimize(ollirResult);
-        JasminBackend backend = new JasminBackend();
-        JasminResult result = backend.toJasmin(ollirResult);
-        System.out.println(result.getJasminCode());
-        /*
-        JasminBackend jasminBackend = new JasminBackend();
-        JasminResult jasminResult = jasminBackend.toJasmin(ollirResult);
+        if(jmmSemanticsResult.getReports().size()==0) {
+            JmmOptimizationImpl jmmOptimizationImpl = new JmmOptimizationImpl();
+            jmmSemanticsResult = jmmOptimizationImpl.optimize(jmmSemanticsResult);
+            OllirResult ollirResult = jmmOptimizationImpl.toOllir(jmmSemanticsResult);
+            ollirResult = jmmOptimizationImpl.optimize(ollirResult);
+            if(ollirResult.getReports().size()==0) {
+                JasminBackend backend = new JasminBackend();
+                JasminResult result = backend.toJasmin(ollirResult);
+                System.out.println(result.getJasminCode());
+            }
+            else
+                System.out.println(ollirResult.getReports());
+        }
+        else
+            System.out.println(jmmSemanticsResult.getReports());
 
-        System.out.println(jasminResult.getJasminCode());
-        */
     }
 
 

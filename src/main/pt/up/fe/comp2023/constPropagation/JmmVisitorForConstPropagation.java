@@ -57,7 +57,7 @@ public class JmmVisitorForConstPropagation extends AJmmVisitor<Boolean,Boolean> 
         return hasOptimized;
     }
     public boolean isConstant(JmmNode node){
-        return Objects.equals(node.getKind(), "Integer") || Objects.equals(node.getKind(), "Boolean") || Objects.equals(node.getKind(), "This");
+        return Objects.equals(node.getKind(), "Integer") || Objects.equals(node.getKind(), "Boolean");
     }
 
     public boolean dealWithAssignment(JmmNode node, Boolean b){
@@ -214,16 +214,14 @@ public class JmmVisitorForConstPropagation extends AJmmVisitor<Boolean,Boolean> 
                     hasOptimized = true;
                     Type idType = (Type) node.getObject("type");
                     JmmNode constantNode;
-                    switch (idType.getName()) {
-                        case "int" -> {
+                    if(Objects.equals(idType.getName(), "int")){
                             constantNode = new JmmNodeImpl("Integer");
-                        }
-                        case "boolean" -> {
+                    }
+                    else if (Objects.equals(idType.getName(), "boolean")){
                             constantNode = new JmmNodeImpl("Boolean");
-                        }
-                        default -> {
-                            constantNode = new JmmNodeImpl("This");
-                        }
+                    }
+                    else{
+                        throw new RuntimeException("Const should be int or boolean");
                     }
                     constantNode.put("value", constant);
                     constantNode.putObject("type", idType);
