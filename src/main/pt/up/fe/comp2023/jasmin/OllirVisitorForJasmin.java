@@ -308,7 +308,7 @@ public class OllirVisitorForJasmin {
                 updateLimitOfStack(-1);
                 if (destOperand instanceof ArrayOperand) {
                     result.append("");
-                } else if (((SingleOpInstruction) rhs).getSingleOperand().getType().getTypeOfElement().equals(OBJECTREF) || ((SingleOpInstruction) rhs).getSingleOperand().getType().getTypeOfElement().equals(ARRAYREF)) {
+                } else if (((SingleOpInstruction) rhs).getSingleOperand().getType().getTypeOfElement().equals(OBJECTREF) || ((SingleOpInstruction) rhs).getSingleOperand().getType().getTypeOfElement().equals(ARRAYREF)|| ((SingleOpInstruction) rhs).getSingleOperand().getType().getTypeOfElement().equals(THIS)) {
                     result.append(legalizeInstruction("\tastore", localVariableIdx)).append("\n");
                 } else {
                     result.append(legalizeInstruction("\tistore", localVariableIdx)).append("\n");
