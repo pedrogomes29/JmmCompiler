@@ -735,11 +735,11 @@ public class OllirVisitorForJasmin {
         Operand op = (Operand) element;
         ElementType type = op.getType().getTypeOfElement();
         if (type.equals(OBJECTREF) || type.equals(STRING)){
-            result.append("\taload").append(varTable.get(op.getName())).append("\n");
+            result.append(legalizeInstruction("\taload",varTable.get(op.getName()).getVirtualReg())).append("\n");
         } else if(element instanceof ArrayOperand) {
-            result.append("\taload_").append(varTable.get(op.getName()).getVirtualReg()).append("\n");
+            result.append(legalizeInstruction("\taload",varTable.get(op.getName()).getVirtualReg())).append("\n");
         } else if (element.getType().getTypeOfElement().equals(ARRAYREF)){
-            result.append("\taload_").append(varTable.get(op.getName()).getVirtualReg()).append("\n");
+            result.append(legalizeInstruction("\taload",varTable.get(op.getName()).getVirtualReg())).append("\n");
         } else if (type.equals(THIS)){
             result.append("\taload0").append("\n");
         } else {
