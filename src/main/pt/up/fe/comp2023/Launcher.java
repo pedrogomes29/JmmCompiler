@@ -45,9 +45,6 @@ public class Launcher {
         // Parse stage
         JmmParserResult parserResult = parser.parse(code, config);
 
-        if(parserResult.getRootNode()!=null)
-            System.out.println(parserResult.getRootNode().toTree());
-
         // Check if there are parsing errors
         TestUtils.noErrors(parserResult.getReports());
 
@@ -62,7 +59,8 @@ public class Launcher {
             if(ollirResult.getReports().size()==0) {
                 JasminBackend backend = new JasminBackend();
                 JasminResult result = backend.toJasmin(ollirResult);
-                System.out.println(result.getJasminCode());
+                String output = result.run();
+                System.out.println("Program output: " + output);
             }
             else
                 System.out.println(ollirResult.getReports());
