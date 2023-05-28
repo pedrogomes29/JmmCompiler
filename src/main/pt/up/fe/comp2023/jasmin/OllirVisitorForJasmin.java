@@ -21,6 +21,9 @@ public class OllirVisitorForJasmin {
 
     private String className;
 
+    public int conditionNumber = 0;
+
+
     public String visit(ClassUnit classUnit) {
         StringBuilder result = new StringBuilder();
 
@@ -103,6 +106,7 @@ public class OllirVisitorForJasmin {
         StringBuilder result = new StringBuilder();
         if (method.isConstructMethod()) {
             result.append(".method public <init>()V\n");
+            result.append("\t.limit stack 1\n").append("\t.limit locals 1").append("\n");
             result.append("\taload_0\n");
             result.append("\tinvokespecial ");
             if (method.getOllirClass().getSuperClass() != null) {
@@ -193,7 +197,12 @@ public class OllirVisitorForJasmin {
             result.append(visitCondBranchInstruction((CondBranchInstruction) instruction, varTable));
         } else if (instruction.getInstType().equals(NOPER)){
             getLoadInstruction(result, ((SingleOpInstruction) instruction).getSingleOperand(), varTable);
+        } else if (instruction.getInstType().equals(BINARYOPER)) {
+            result.append(visitBinaryOpInstruction((BinaryOpInstruction) instruction,varTable));
+        } else if (instruction.getInstType().equals(UNARYOPER)){
+            result.append(visitUnaryOpInstruction((UnaryOpInstruction) instruction, varTable));
         }
+
         if (instruction.getInstType() == InstructionType.CALL && ((CallInstruction) instruction).getReturnType().getTypeOfElement() != ElementType.VOID) {
 
             result.append("\tpop\n");
@@ -233,8 +242,9 @@ public class OllirVisitorForJasmin {
             result.append(visitCallInstruction((CallInstruction) rhs, localVariable));
         } else if (rhs instanceof GetFieldInstruction) {
             result.append(visitGetFieldInstruction((GetFieldInstruction) rhs, localVariable));
+        } else if (rhs instanceof UnaryOpInstruction) {
+            result.append(visitUnaryOpInstruction((UnaryOpInstruction) rhs,localVariable));
         }
-
         Operand destOperand = (Operand) assign.getDest();
         InstructionType ins = assign.getInstType();
         if (localVariable.containsKey(destOperand.getName()) && !ins.equals(ASSIGN)) {
@@ -291,11 +301,12 @@ public class OllirVisitorForJasmin {
     }
 
 
-    public StringBuilder visitBinaryOpInstruction(BinaryOpInstruction operation, HashMap<String, Descriptor> localVariableIndices) {
+
+    public StringBuilder visitBinaryOpInstruction(BinaryOpInstruction operation, HashMap <String, Descriptor> localVariableIndices){
         StringBuilder result = new StringBuilder();
         Element leftElement = operation.getLeftOperand();
         Element rightElement = operation.getRightOperand();
-        if (leftElement.isLiteral()) {
+        if (leftElement.isLiteral()){
             jasmincodeForIntegerVariable(result, Integer.valueOf(((LiteralElement) leftElement).getLiteral()));
         } else {
             Operand leftOperand = (Operand) operation.getLeftOperand();
@@ -310,27 +321,67 @@ public class OllirVisitorForJasmin {
         }
 
         OperationType opType = operation.getOperation().getOpType();
-        if (opType.equals(ADD)) {
+        if (opType.equals(ADD)){
             result.append("\tiadd");
-            result.append("\n");
         } else if (opType.equals(SUB)) {
             result.append("\tisub");
-            result.append("\n");
         } else if (opType.equals(MUL)) {
             result.append("\timul");
-            result.append("\n");
         } else if (opType.equals(DIV)) {
             result.append("\tidiv");
-            result.append("\n");
         } else if (opType.equals(ANDB)) {
             result.append("\tiand");
-            result.append("\n");
-        } else if (opType.equals(ORB)) {
-            result.append("\tior");
-            result.append("\n");
+        } else if (opType.equals(LTH)) {
+            result.append("\tif_icmplt");
+        } else if (opType.equals(NOTB)) {
+            result.append("\tifeq");
         }
+        boolean isIfOperation = false;
+        if (opType.equals(EQ) || opType.equals(LTH) || opType.equals(GTH) || opType.equals(NEQ)){
+            isIfOperation = true;
+        }
+        if (isIfOperation){
+            result.append(" TRUE").append(this.conditionNumber).append("\n").append(
+                    "\ticonst_0\n \tgoto NEXT").append(this.conditionNumber).append("\n TRUE").append(
+                    this.conditionNumber).append(":\n\ticonst_1\n NEXT").append(this.conditionNumber++).append(":");
+        }
+        result.append("\n");
+
         return result;
     }
+
+    public StringBuilder visitUnaryOpInstruction(UnaryOpInstruction instruction,HashMap<String, Descriptor> varTable){
+        StringBuilder result = new StringBuilder();
+        getLoadInstruction(result, instruction.getOperand(),varTable);
+        OperationType opType = instruction.getOperation().getOpType();
+        if (opType.equals(ADD)){
+            result.append("\tiadd");
+        } else if (opType.equals(SUB)) {
+            result.append("\tisub");
+        } else if (opType.equals(MUL)) {
+            result.append("\timul");
+        } else if (opType.equals(DIV)) {
+            result.append("\tidiv");
+        } else if (opType.equals(ANDB)) {
+            result.append("\tiand");
+        } else if (opType.equals(LTH)) {
+            result.append("\tif_icmplt");
+        } else if (opType.equals(NOTB)) {
+            result.append("\tifeq");
+        }
+        boolean isIfOperation = false;
+        if (opType.equals(NOTB)){
+            isIfOperation = true;
+        }
+        if (isIfOperation){
+            result.append(" TRUE").append(this.conditionNumber).append("\n").append(
+                    "\ticonst_0\n \tgoto NEXT").append(this.conditionNumber).append("\n TRUE").append(
+                    this.conditionNumber).append(":\n\ticonst_1\n NEXT").append(this.conditionNumber++).append(":");
+        }
+        result.append("\n");
+        return result;
+    }
+
 
     public StringBuilder visitCallInstruction(CallInstruction callInstruction,HashMap <String, Descriptor> localVariableIndices){
         StringBuilder result = new StringBuilder();
