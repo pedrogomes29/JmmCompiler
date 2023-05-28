@@ -56,6 +56,7 @@ public class Launcher {
         JmmSemanticsResult jmmSemanticsResult = jmmAnalysisImpl.semanticAnalysis(parserResult);
         System.out.println(jmmSemanticsResult.getRootNode().toTree());
         JmmOptimizationImpl jmmOptimizationImpl = new JmmOptimizationImpl();
+        jmmSemanticsResult = jmmOptimizationImpl.optimize(jmmSemanticsResult);
         OllirResult ollirResult = jmmOptimizationImpl.toOllir(jmmSemanticsResult);
         ollirResult = jmmOptimizationImpl.optimize(ollirResult);
         JasminBackend backend = new JasminBackend();
