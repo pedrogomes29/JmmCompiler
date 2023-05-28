@@ -241,7 +241,7 @@ public class OllirVisitorForJasmin {
             }
         } else if (rhs instanceof BinaryOpInstruction) {
             Operand destOperand = (Operand) assign.getDest();
-            if(destOperand.getName().equals(((BinaryOpInstruction) rhs).getLeftOperand().toString()) && ((BinaryOpInstruction) rhs).getRightOperand().isLiteral()) {
+            if(((BinaryOpInstruction) rhs).getLeftOperand() instanceof Operand && destOperand.getName().equals(((Operand) ((BinaryOpInstruction) rhs).getLeftOperand()).getName()) && ((BinaryOpInstruction) rhs).getRightOperand().isLiteral()) {
                 if (((BinaryOpInstruction) rhs).getOperation().getOpType() == ADD) {
                     result.append("\tiinc " + localVariable.get(destOperand.getName()).getVirtualReg() + " " + ((LiteralElement) ((BinaryOpInstruction) rhs).getRightOperand()).getLiteral() + "\n");
                     return result;
@@ -254,7 +254,7 @@ public class OllirVisitorForJasmin {
                     result.append(visitBinaryOpInstruction((BinaryOpInstruction) rhs, localVariable));
                 }
             }
-            else if(destOperand.getName().equals(((BinaryOpInstruction) rhs).getRightOperand().toString()) && ((BinaryOpInstruction) rhs).getLeftOperand().isLiteral()) {
+            else if(((BinaryOpInstruction) rhs).getRightOperand() instanceof Operand && destOperand.getName().equals(((Operand) ((BinaryOpInstruction) rhs).getRightOperand()).getName()) && ((BinaryOpInstruction) rhs).getLeftOperand().isLiteral()) {
                 if (((BinaryOpInstruction) rhs).getOperation().getOpType() == ADD) {
                     result.append("\tiinc " + localVariable.get(destOperand.getName()).getVirtualReg() + " " + ((LiteralElement) ((BinaryOpInstruction) rhs).getLeftOperand()).getLiteral() + "\n");
                     return result;
