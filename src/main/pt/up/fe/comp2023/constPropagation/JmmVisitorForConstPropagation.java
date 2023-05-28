@@ -210,7 +210,7 @@ public class JmmVisitorForConstPropagation extends AJmmVisitor<Boolean,Boolean> 
             HashMap<String, String> in = (HashMap<String, String>) node.getOptionalObject("in").orElse(null);
             if (in != null) {
                 String constant = in.get(node.get("value"));
-                if (!Objects.equals(constant, "undefined") && !Objects.equals(constant, "not a constant")) {
+                if (constant!=null && !Objects.equals(constant, "undefined") && !Objects.equals(constant, "not a constant")) {
                     hasOptimized = true;
                     Type idType = (Type) node.getObject("type");
                     JmmNode constantNode;
