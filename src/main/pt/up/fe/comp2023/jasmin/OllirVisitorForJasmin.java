@@ -250,25 +250,33 @@ public class OllirVisitorForJasmin {
                 result.append(legalizeInstruction("\tiload", localVariable.get(variableName).getVirtualReg())).append("\n");
             }
         } else if (rhs instanceof BinaryOpInstruction) {
-            if(assign.getDest().toString().equals(((BinaryOpInstruction) rhs).getLeftOperand().toString()) && ((BinaryOpInstruction) rhs).getRightOperand().isLiteral()) {
-                Operand destOperand = (Operand) assign.getDest();
+            Operand destOperand = (Operand) assign.getDest();
+            if(((BinaryOpInstruction) rhs).getLeftOperand() instanceof Operand && destOperand.getName().equals(((Operand) ((BinaryOpInstruction) rhs).getLeftOperand()).getName()) && ((BinaryOpInstruction) rhs).getRightOperand().isLiteral()) {
                 if (((BinaryOpInstruction) rhs).getOperation().getOpType() == ADD) {
-                    result.append("\tiinc " + localVariable.get(destOperand.getName()).getVirtualReg() + " " + ((LiteralElement) ((BinaryOpInstruction) rhs).getRightOperand()).getLiteral() + "\n");
-                    return result;
+                    if (Integer.parseInt(((LiteralElement) ((BinaryOpInstruction) rhs).getRightOperand()).getLiteral())<= 127) {
+                        result.append("\tiinc " + localVariable.get(destOperand.getName()).getVirtualReg() + " " + ((LiteralElement) ((BinaryOpInstruction) rhs).getRightOperand()).getLiteral() + "\n");
+                        return result;
+                    }
+                    else result.append(visitBinaryOpInstruction((BinaryOpInstruction) rhs, localVariable));
                 }
                 else if (((BinaryOpInstruction) rhs).getOperation().getOpType() == SUB) {
-                    result.append("\tiinc " + localVariable.get(destOperand.getName()).getVirtualReg() + " -" + ((LiteralElement) ((BinaryOpInstruction) rhs).getRightOperand()).getLiteral() + "\n");
-                    return result;
+                    if (Integer.parseInt(((LiteralElement) ((BinaryOpInstruction) rhs).getRightOperand()).getLiteral())<= 128) {
+                        result.append("\tiinc " + localVariable.get(destOperand.getName()).getVirtualReg() + " -" + ((LiteralElement) ((BinaryOpInstruction) rhs).getRightOperand()).getLiteral() + "\n");
+                        return result;
+                    }
+                    else result.append(visitBinaryOpInstruction((BinaryOpInstruction) rhs, localVariable));
                 }
                 else {
                     result.append(visitBinaryOpInstruction((BinaryOpInstruction) rhs, localVariable));
                 }
             }
-            else if(assign.getDest().toString().equals(((BinaryOpInstruction) rhs).getRightOperand().toString()) && ((BinaryOpInstruction) rhs).getLeftOperand().isLiteral()) {
-                Operand destOperand = (Operand) assign.getDest();
+            else if(((BinaryOpInstruction) rhs).getRightOperand() instanceof Operand && destOperand.getName().equals(((Operand) ((BinaryOpInstruction) rhs).getRightOperand()).getName()) && ((BinaryOpInstruction) rhs).getLeftOperand().isLiteral()) {
                 if (((BinaryOpInstruction) rhs).getOperation().getOpType() == ADD) {
-                    result.append("\tiinc " + localVariable.get(destOperand.getName()).getVirtualReg() + " " + ((LiteralElement) ((BinaryOpInstruction) rhs).getLeftOperand()).getLiteral() + "\n");
-                    return result;
+                    if (Integer.parseInt(((LiteralElement) ((BinaryOpInstruction) rhs).getLeftOperand()).getLiteral())<= 127) {
+                        result.append("\tiinc " + localVariable.get(destOperand.getName()).getVirtualReg() + " " + ((LiteralElement) ((BinaryOpInstruction) rhs).getLeftOperand()).getLiteral() + "\n");
+                        return result;
+                    }
+                    else result.append(visitBinaryOpInstruction((BinaryOpInstruction) rhs, localVariable));
                 }
                 else {
                     result.append(visitBinaryOpInstruction((BinaryOpInstruction) rhs, localVariable));
