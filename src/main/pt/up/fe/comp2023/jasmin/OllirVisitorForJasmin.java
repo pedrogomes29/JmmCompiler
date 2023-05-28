@@ -191,6 +191,8 @@ public class OllirVisitorForJasmin {
             result.append(visitGotoInstruction((GotoInstruction) instruction, varTable));
         } else if (instruction instanceof CondBranchInstruction) {
             result.append(visitCondBranchInstruction((CondBranchInstruction) instruction, varTable));
+        } else if (instruction.getInstType().equals(NOPER)){
+            getLoadInstruction(result, ((SingleOpInstruction) instruction).getSingleOperand(), varTable);
         }
         if (instruction.getInstType() == InstructionType.CALL && ((CallInstruction) instruction).getReturnType().getTypeOfElement() != ElementType.VOID) {
 
@@ -583,26 +585,6 @@ public class OllirVisitorForJasmin {
             OperationType operationType = binaryOpInstruction.getOperation().getOpType();
             if (operationType.equals(ANDB)){
                 result.append(getInstruction(instruction, localVariable));
-                Element lhs = binaryOpInstruction.getLeftOperand();
-                Element rhs = binaryOpInstruction.getRightOperand();
-                boolean leftIsLiteral = false;
-                boolean rightIsLiteral = false;
-
-                if (lhs instanceof  LiteralElement) {
-                    leftIsLiteral = true;
-                } else if (rhs instanceof  LiteralElement) {
-                    rightIsLiteral = true;
-                }
-                if (leftIsLiteral) {
-                    jasmincodeForIntegerVariable(result,Integer.parseInt(((LiteralElement) lhs).getLiteral()));
-                    getLoadInstruction(result,rhs, localVariable);
-                } else if  (rightIsLiteral){
-                    jasmincodeForIntegerVariable(result,Integer.parseInt(((LiteralElement) rhs).getLiteral()));
-                    getLoadInstruction(result,lhs,localVariable);
-                } else {
-                    getLoadInstruction(result,lhs,localVariable);
-                    getLoadInstruction(result,rhs,localVariable);
-                }
                 result.append("\tifne ").append(condBranchInstruction.getLabel()).append("\n");
             } else if (operationType.equals(LTH)) {
                 Element lhs = binaryOpInstruction.getLeftOperand();
@@ -661,20 +643,12 @@ public class OllirVisitorForJasmin {
                 result.append("\tifeq ").append(condBranchInstruction.getLabel()).append("\n");
             }
         } else {
-            if (instruction instanceof SingleOpInstruction){
-                Element element = ((SingleOpInstruction) instruction).getSingleOperand();
-                if (element instanceof LiteralElement){
-                    jasmincodeForIntegerVariable(result, Integer.parseInt(((LiteralElement) element).getLiteral()));
-                } else {
-                    getLoadInstruction(result, element, localVariable);
-                }
-            } else {
-                result.append(getInstruction(instruction, localVariable));
-            }
+            result.append(getInstruction(instruction,localVariable));
             result.append("\tifne ").append(condBranchInstruction.getLabel()).append("\n");
         }
         return result;
     }
+
 
     public void getLoadInstruction(StringBuilder result, Element element, HashMap<String, Descriptor> varTable){
         if (element.isLiteral()){
