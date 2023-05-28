@@ -23,6 +23,9 @@ public class OllirVisitorForJasmin {
 
     public int conditionNumber = 0;
 
+    public int stackNumber = 0;
+
+    public int currentStackNumber = 0;
 
     public String visit(ClassUnit classUnit) {
         StringBuilder result = new StringBuilder();
@@ -157,18 +160,22 @@ public class OllirVisitorForJasmin {
             }
 
             HashMap<String, Descriptor> varTable = method.getVarTable();
-
+            stackNumber = 0;
+            currentStackNumber = 0;
             int nrRegisters = calculateLimitLocals(method);
-            result.append("\t.limit stack 99\n").append("\t.limit locals ").append(nrRegisters).append("\n");
-
+            StringBuilder aux = new StringBuilder();
             for (Instruction instruction : method.getInstructions()) {
                 for (Map.Entry<String, Instruction> label : method.getLabels().entrySet()) {
                     if (label.getValue().equals(instruction)) {
-                        result.append(label.getKey()).append(":\n");
+                        aux.append(label.getKey()).append(":\n");
                     }
                 }
-                result.append(getInstruction(instruction, varTable));
+                aux.append(getInstruction(instruction, varTable));
             }
+
+            result.append("\t.limit stack ").append(stackNumber).append("\n").append("\t.limit locals ").append(nrRegisters).append("\n");
+            result.append(aux);
+
             if (method.getReturnType().getTypeOfElement().equals(VOID)) {
                 result.append("\treturn\n");
             } else if (method.getReturnType().getTypeOfElement().equals(OBJECTREF) || method.getReturnType().getTypeOfElement().equals(ARRAYREF)) {
@@ -207,6 +214,7 @@ public class OllirVisitorForJasmin {
         if (instruction.getInstType() == InstructionType.CALL && ((CallInstruction) instruction).getReturnType().getTypeOfElement() != ElementType.VOID) {
 
             result.append("\tpop\n");
+            updateLimitOfStack(-1);
         }
         return result;
     }
@@ -222,6 +230,7 @@ public class OllirVisitorForJasmin {
         } else if (rhs instanceof SingleOpInstruction) {
             ElementType type = ((SingleOpInstruction) rhs).getSingleOperand().getType().getTypeOfElement();
             String variableName = ((Operand) ((SingleOpInstruction) rhs).getSingleOperand()).getName();
+            updateLimitOfStack(1);
             if (type == THIS) {
                 result.append("\taload_0\n");
             } else if (type == OBJECTREF || type == ARRAYREF) {
@@ -236,6 +245,7 @@ public class OllirVisitorForJasmin {
                     }
                 }
                 result.append("\tiaload\n");
+                updateLimitOfStack(-1);
             } else {
                 result.append(legalizeInstruction("\tiload", localVariable.get(variableName).getVirtualReg())).append("\n");
             }
@@ -277,6 +287,7 @@ public class OllirVisitorForJasmin {
         Operand destOperand = (Operand) assign.getDest();
         InstructionType ins = assign.getInstType();
         if (localVariable.containsKey(destOperand.getName()) && !ins.equals(ASSIGN)) {
+            updateLimitOfStack(1);
             result.append(legalizeInstruction("\tiload", localVariable.get(destOperand.getName()).getVirtualReg())).append("\n");
         } else {
             String localVariableName = destOperand.getName();
@@ -286,6 +297,7 @@ public class OllirVisitorForJasmin {
                 ElementType e = ((CallInstruction) rhs).getReturnType().getTypeOfElement();
             }
             if (rhs instanceof SingleOpInstruction) {
+                updateLimitOfStack(-1);
                 if (destOperand instanceof ArrayOperand) {
                     result.append("");
                 } else if (((SingleOpInstruction) rhs).getSingleOperand().getType().getTypeOfElement().equals(OBJECTREF) || ((SingleOpInstruction) rhs).getSingleOperand().getType().getTypeOfElement().equals(ARRAYREF)) {
@@ -294,8 +306,10 @@ public class OllirVisitorForJasmin {
                     result.append(legalizeInstruction("\tistore", localVariableIdx)).append("\n");
                 }
             } else if ((!(rhs instanceof CallInstruction)) || ((!((CallInstruction) rhs).getReturnType().getTypeOfElement().equals(OBJECTREF)) && (!((CallInstruction) rhs).getReturnType().getTypeOfElement().equals(CLASS)) && (!((CallInstruction) rhs).getReturnType().getTypeOfElement().equals(THIS)) && (!((CallInstruction) rhs).getReturnType().getTypeOfElement().equals(ARRAYREF)))) {
+                updateLimitOfStack(-1);
                 result.append(legalizeInstruction("\tistore", localVariableIdx)).append("\n");
             } else {
+                updateLimitOfStack(-1);
                 result.append(legalizeInstruction("\tastore", localVariableIdx)).append("\n");
             }
             if (destOperand instanceof ArrayOperand) {
@@ -313,6 +327,7 @@ public class OllirVisitorForJasmin {
                 } else if (rhs instanceof SingleOpInstruction) {
                     ElementType type = ((SingleOpInstruction) rhs).getSingleOperand().getType().getTypeOfElement();
                     String variableName = ((Operand) ((SingleOpInstruction) rhs).getSingleOperand()).getName();
+                    updateLimitOfStack(1);
                     if (type == THIS) {
                         result.append("\taload_0\n");
                     } else if (type == OBJECTREF || type == ARRAYREF) {
@@ -322,6 +337,7 @@ public class OllirVisitorForJasmin {
                     }
                 }
                 result.append("\tiastore\n");
+                updateLimitOfStack(-3);
             }
         }
 
@@ -375,7 +391,7 @@ public class OllirVisitorForJasmin {
                     this.conditionNumber).append(":\n\ticonst_1\nSKIPX").append(this.conditionNumber++).append(":");
         }
         result.append("\n");
-
+        updateLimitOfStack(-1);
         return result;
     }
 
@@ -415,16 +431,17 @@ public class OllirVisitorForJasmin {
     public StringBuilder visitCallInstruction(CallInstruction callInstruction,HashMap <String, Descriptor> localVariableIndices){
         StringBuilder result = new StringBuilder();
         Operand firstArg = (Operand) callInstruction.getFirstArg();
+        int variation = 0;
         if (firstArg.getType().getTypeOfElement().equals(ARRAYREF)){
             return result.append(visitCallArray(callInstruction, localVariableIndices));
         }
         ClassType classType = (ClassType) firstArg.getType();
         CallType invocationType = callInstruction.getInvocationType();
         switch (invocationType){
-            case invokespecial -> result.append(visitInvokeSpecial(callInstruction,localVariableIndices));
-            case invokestatic -> result.append(visitInvokeStatic(callInstruction, localVariableIndices));
-            case invokevirtual -> result.append(visitInvokeVirtual(callInstruction, localVariableIndices));
-            case NEW -> result.append(visitNew(callInstruction,localVariableIndices));
+            case invokespecial -> {result.append(visitInvokeSpecial(callInstruction,localVariableIndices)); variation = 1;}
+            case invokestatic -> {result.append(visitInvokeStatic(callInstruction, localVariableIndices)); variation = 0;}
+            case invokevirtual -> {result.append(visitInvokeVirtual(callInstruction, localVariableIndices)); variation = 1;}
+            case NEW -> {result.append(visitNew(callInstruction,localVariableIndices)); variation = -1;}
         }
         result.append("\t").append(callInstruction.getInvocationType().toString().toLowerCase()).append(" ");
         if (firstArg.getName().equals("this")){
@@ -444,6 +461,7 @@ public class OllirVisitorForJasmin {
         }
         ArrayList<Element> operands = callInstruction.getListOfOperands();
         for (Element e : operands) {
+            variation++;
             ElementType elementType = e.getType().getTypeOfElement();
             if (elementType.equals(ARRAYREF)){
                 result.append("[");
@@ -472,18 +490,19 @@ public class OllirVisitorForJasmin {
             result.append("V");
         } else if (elementType.equals(INT32)){
             result.append("I");
+            variation--;
         } else if (elementType.equals(BOOLEAN)){
             result.append("Z");
+            variation--;
         } else if (elementType.equals(CLASS)){
             result.append("L").append(((ClassType) callInstruction.getReturnType()).getName()).append(";");
+            variation--;
         }
         result.append("\n");
 
-        if (invocationType.equals(NEW)){
-            result.append("\tdup\n");
-        }
 
 
+        updateLimitOfStack(-variation);
         return result;
     }
 
@@ -499,6 +518,7 @@ public class OllirVisitorForJasmin {
             Operand returnInstructionOperand = ((Operand)returnIntruction.getOperand());
             String localVariableName = returnInstructionOperand.getName();
             int localVariableIdx;
+            updateLimitOfStack(1);
             if (returnInstructionOperand.getType().getTypeOfElement().equals(OBJECTREF) || returnInstructionOperand.getType().getTypeOfElement().equals(ARRAYREF)){
                 result.append(legalizeInstruction("\taload",localVariable.get(returnInstructionOperand.getName()).getVirtualReg())).append("\n");
             } else if (returnInstructionOperand.getType().getTypeOfElement().equals(THIS)){
@@ -520,10 +540,12 @@ public class OllirVisitorForJasmin {
             result.append("\tsipush ").append(value).append("\n");
         else
             result.append("\tldc ").append(value).append("\n");
+        updateLimitOfStack(1);
     }
 
     public StringBuilder visitOperand(Operand operand, HashMap <String, Descriptor> localVariable){
         StringBuilder result = new StringBuilder();
+        updateLimitOfStack(1);
         if (operand.isParameter()){
             result.append(legalizeInstruction("\tiload",operand.getParamId())).append("\n");
         }else {
@@ -539,12 +561,14 @@ public class OllirVisitorForJasmin {
     public StringBuilder visitInvokeSpecial(CallInstruction callInstruction,HashMap <String, Descriptor> localVariable){
         StringBuilder result = new StringBuilder();
         String name = ((Operand)callInstruction.getFirstArg()).getName();
+        updateLimitOfStack(1);
         result.append(legalizeInstruction("\taload",localVariable.get(name).getVirtualReg())).append("\n");
         return result;
     }
     public StringBuilder visitInvokeVirtual(CallInstruction callInstruction,HashMap <String, Descriptor> localVariable){
         StringBuilder result = new StringBuilder();
         Element firstOperand = callInstruction.getFirstArg();
+        updateLimitOfStack(1);
         if (firstOperand.getType().getTypeOfElement().equals(THIS)){
             result.append("\taload_0\n");
         } else {
@@ -554,6 +578,7 @@ public class OllirVisitorForJasmin {
             if (operand.isLiteral()){
                 jasmincodeForIntegerVariable(result, Integer.valueOf(((LiteralElement) operand).getLiteral()));
             } else {
+                updateLimitOfStack(1);
                 Operand op = (Operand) operand;
                 if (op.getType().getTypeOfElement().equals(OBJECTREF) || op.getType().getTypeOfElement().equals(STRING) || op.getType().getTypeOfElement().equals(ARRAYREF)) {
                     result.append(legalizeInstruction("\taload", localVariable.get(op.getName()).getVirtualReg())).append("\n");
@@ -576,10 +601,12 @@ public class OllirVisitorForJasmin {
                 Operand op = (Operand) operand;
                 if (op.getType().getTypeOfElement().equals(OBJECTREF) || op.getType().getTypeOfElement().equals(STRING) || op.getType().getTypeOfElement().equals(ARRAYREF)) {
                     result.append(legalizeInstruction("\taload", localVariable.get(op.getName()).getVirtualReg())).append("\n");
+                    updateLimitOfStack(1);
                 } else if (firstOperand.getType().getTypeOfElement().equals(THIS)) {
                     result.append("\taload_0\n");
                 } else {
                     result.append(legalizeInstruction("\tiload", localVariable.get(op.getName()).getVirtualReg())).append("\n");
+                    updateLimitOfStack(1);
                 }
             }
         }
@@ -590,6 +617,7 @@ public class OllirVisitorForJasmin {
         StringBuilder result = new StringBuilder();
         for (Element element : callInstruction.getListOfOperands()){
             String name = ((Operand)element).getName();
+            updateLimitOfStack(1);
             result.append(legalizeInstruction("\taload",localVariable.get(name).getVirtualReg())).append("\n");
 
         }
@@ -598,6 +626,7 @@ public class OllirVisitorForJasmin {
     }
 
     public StringBuilder visitPutFieldInstruction(PutFieldInstruction putFieldInstruction, HashMap <String, Descriptor> localVariables){
+        updateLimitOfStack(-2);
         StringBuilder result = new StringBuilder();
         Integer value = Integer.parseInt(((LiteralElement) putFieldInstruction.getThirdOperand()).getLiteral());
         Element firstOperand =putFieldInstruction.getFirstOperand();
@@ -624,6 +653,7 @@ public class OllirVisitorForJasmin {
         StringBuilder result = new StringBuilder();
         Element firstOperand = getFieldInstruction.getFirstOperand();
         Element secondOperand = getFieldInstruction.getSecondOperand();
+        updateLimitOfStack(1);
         if (firstOperand.getType().getTypeOfElement().equals(THIS)){
             result.append("\taload_0\n");
             result.append("\tgetfield ").append(this.className).append("/").append(((Operand) getFieldInstruction.getSecondOperand()).getName());
@@ -665,6 +695,7 @@ public class OllirVisitorForJasmin {
             OperationType operationType = binaryOpInstruction.getOperation().getOpType();
             if (operationType.equals(ANDB)){
                 result.append(getInstruction(instruction, localVariable));
+                updateLimitOfStack(-1);
                 result.append("\tifne ").append(condBranchInstruction.getLabel()).append("\n");
             } else if (operationType.equals(LTH)) {
                 Element lhs = binaryOpInstruction.getLeftOperand();
@@ -680,14 +711,17 @@ public class OllirVisitorForJasmin {
                 if (leftIsLiteral && ((LiteralElement) lhs).getLiteral().equals("0")) {
                     jasmincodeForIntegerVariable(result,Integer.parseInt(((LiteralElement) lhs).getLiteral()));
                     getLoadInstruction(result,rhs, localVariable);
+                    updateLimitOfStack(-1);
                     result.append("\tifgt ").append(condBranchInstruction.getLabel()).append("\n");
                 } else if (rightIsLiteral && ((LiteralElement) rhs).getLiteral().equals("0")){
                     jasmincodeForIntegerVariable(result,Integer.parseInt(((LiteralElement) rhs).getLiteral()));
                     getLoadInstruction(result,lhs,localVariable);
+                    updateLimitOfStack(-1);
                     result.append("\tiflt ").append(condBranchInstruction.getLabel()).append("\n");
                 } else {
                     getLoadInstruction(result,lhs,localVariable);
                     getLoadInstruction(result,rhs,localVariable);
+                    updateLimitOfStack(-2);
                     result.append("\tif_icmplt ").append(condBranchInstruction.getLabel()).append("\n");
                 }
             } else if (operationType.equals(GTE)){
@@ -704,14 +738,17 @@ public class OllirVisitorForJasmin {
                 if (leftIsLiteral) {
                     jasmincodeForIntegerVariable(result,Integer.parseInt(((LiteralElement) lhs).getLiteral()));
                     getLoadInstruction(result,rhs, localVariable);
+                    updateLimitOfStack(-1);
                     result.append("\tiflt ").append(condBranchInstruction.getLabel()).append("\n");
                 } else if  (rightIsLiteral){
                     jasmincodeForIntegerVariable(result,Integer.parseInt(((LiteralElement) lhs).getLiteral()));
                     getLoadInstruction(result,lhs,localVariable);
+                    updateLimitOfStack(-1);
                     result.append("\tifgt ").append(condBranchInstruction.getLabel()).append("\n");
                 } else {
                     getLoadInstruction(result,lhs,localVariable);
                     getLoadInstruction(result,rhs,localVariable);
+                    updateLimitOfStack(-2);
                     result.append("\tif_icmpgt ").append(condBranchInstruction.getLabel()).append("\n");
                 }
             }
@@ -720,10 +757,12 @@ public class OllirVisitorForJasmin {
             UnaryOpInstruction unaryOpInstruction = (UnaryOpInstruction) instruction;
             if (unaryOpInstruction.getOperation().getOpType().equals(NOTB)) {
                 getLoadInstruction(result,unaryOpInstruction.getOperand(),localVariable);
+                updateLimitOfStack(-1);
                 result.append("\tifeq ").append(condBranchInstruction.getLabel()).append("\n");
             }
         } else {
             result.append(getInstruction(instruction,localVariable));
+            updateLimitOfStack(-1);
             result.append("\tifne ").append(condBranchInstruction.getLabel()).append("\n");
         }
         return result;
@@ -737,6 +776,7 @@ public class OllirVisitorForJasmin {
         }
         Operand op = (Operand) element;
         ElementType type = op.getType().getTypeOfElement();
+        updateLimitOfStack(1);
         if (type.equals(OBJECTREF) || type.equals(STRING)){
             result.append(legalizeInstruction("\taload",varTable.get(op.getName()).getVirtualReg())).append("\n");
         } else if(element instanceof ArrayOperand) {
@@ -758,6 +798,7 @@ public class OllirVisitorForJasmin {
         } else {
             for (Element element : callInstruction.getListOfOperands()) {
                 getLoadInstruction(result, element, localVariables);
+                updateLimitOfStack(1);
             }
 
             result.append("\tnewarray int\n");
@@ -775,6 +816,11 @@ public class OllirVisitorForJasmin {
             result.append(instruction).append(" ").append(number);
         }
         return result;
+    }
+
+    public void updateLimitOfStack(int number){
+        currentStackNumber += number;
+        if (stackNumber < currentStackNumber) stackNumber = currentStackNumber;
     }
 }
 
