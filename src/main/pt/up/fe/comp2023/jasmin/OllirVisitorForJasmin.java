@@ -23,8 +23,6 @@ public class OllirVisitorForJasmin {
 
     public int conditionNumber = 0;
 
-    public int stackNumber = 1;
-
 
     public String visit(ClassUnit classUnit) {
         StringBuilder result = new StringBuilder();
@@ -161,18 +159,16 @@ public class OllirVisitorForJasmin {
             HashMap<String, Descriptor> varTable = method.getVarTable();
 
             int nrRegisters = calculateLimitLocals(method);
-            StringBuilder aux = new StringBuilder();
+            result.append("\t.limit stack 99\n").append("\t.limit locals ").append(nrRegisters).append("\n");
+
             for (Instruction instruction : method.getInstructions()) {
                 for (Map.Entry<String, Instruction> label : method.getLabels().entrySet()) {
                     if (label.getValue().equals(instruction)) {
-                        aux.append(label.getKey()).append(":\n");
+                        result.append(label.getKey()).append(":\n");
                     }
                 }
-                aux.append(getInstruction(instruction, varTable));
+                result.append(getInstruction(instruction, varTable));
             }
-
-            result.append("\t.limit stack ").append(stackNumber).append("\n").append("\t.limit locals ").append(nrRegisters).append("\n");
-            result.append(aux);
             if (method.getReturnType().getTypeOfElement().equals(VOID)) {
                 result.append("\treturn\n");
             } else if (method.getReturnType().getTypeOfElement().equals(OBJECTREF) || method.getReturnType().getTypeOfElement().equals(ARRAYREF)) {
@@ -240,7 +236,6 @@ public class OllirVisitorForJasmin {
                     }
                 }
                 result.append("\tiaload\n");
-                stackNumber--;
             } else {
                 result.append(legalizeInstruction("\tiload", localVariable.get(variableName).getVirtualReg())).append("\n");
             }
@@ -327,7 +322,6 @@ public class OllirVisitorForJasmin {
                     }
                 }
                 result.append("\tiastore\n");
-                stackNumber -= 3;
             }
         }
 
@@ -526,7 +520,6 @@ public class OllirVisitorForJasmin {
             result.append("\tsipush ").append(value).append("\n");
         else
             result.append("\tldc ").append(value).append("\n");
-        stackNumber++;
     }
 
     public StringBuilder visitOperand(Operand operand, HashMap <String, Descriptor> localVariable){
@@ -742,7 +735,6 @@ public class OllirVisitorForJasmin {
             jasmincodeForIntegerVariable(result, Integer.parseInt(((LiteralElement) element).getLiteral()));
             return;
         }
-        stackNumber++;
         Operand op = (Operand) element;
         ElementType type = op.getType().getTypeOfElement();
         if (type.equals(OBJECTREF) || type.equals(STRING)){

@@ -1,14 +1,4 @@
-import io;
 class PropWithLoop {
     public static void main(String[] args) {
-        int i;
-        i=0;
-        while(i<10){
-            if(i<5)
-                io.println(i);
-            else
-                io.println(i+10);
-            i = i + 1;
-        }
     }
 }
