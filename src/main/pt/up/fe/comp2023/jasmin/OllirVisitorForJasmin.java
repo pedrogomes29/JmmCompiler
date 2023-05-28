@@ -159,7 +159,7 @@ public class OllirVisitorForJasmin {
             HashMap<String, Descriptor> varTable = method.getVarTable();
 
             int nrRegisters = calculateLimitLocals(method);
-            result.append("\t.limit stack 99\n").append("\t.limit locals ").append(nrRegisters).append("\n");
+            result.append("\t.limit stack 99\n").append("\t.limit locals 99").append("\n");
 
             for (Instruction instruction : method.getInstructions()) {
                 for (Map.Entry<String, Instruction> label : method.getLabels().entrySet()) {
