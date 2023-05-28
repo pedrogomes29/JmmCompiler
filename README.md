@@ -3,9 +3,9 @@
 For this project, you need to install [Java](https://jdk.java.net/), [Gradle](https://gradle.org/install/), and [Git](https://git-scm.com/downloads/) (and optionally, a [Git GUI client](https://git-scm.com/downloads/guis), such as TortoiseGit or GitHub Desktop). Please check the [compatibility matrix](https://docs.gradle.org/current/userguide/compatibility.html) for Java and Gradle versions.
 
 ## Group Members
-> João Reis - 202007227
-> Pedro Gomes - 202006322
-> Rui Pires - 202008252
+- João Reis - 202007227
+- Pedro Gomes - 202006322
+- Rui Pires - 202008252
 
 ## Work distribuiton
 
@@ -26,6 +26,9 @@ x.i32 :=.i32 1.i32 + 2.i32;
 Same goes for conditions.
 
 In addition, we implemented short circuits for the conditional jumps.
+
+## Optimizations
+We performed register allocation, constant propagation, constant folding and used low cost instructions.
 
 
 ## Project setup
