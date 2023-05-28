@@ -147,13 +147,13 @@ public class OllirVisitorForJasmin {
                 result.append("[");
                 returnTypeOfElement = ((ArrayType) method.getReturnType()).getArrayType();
             }
-            if (returnTypeOfElement.name().equals("BOOLEAN")) {
+            if (returnTypeOfElement.equals(BOOLEAN)) {
                 result.append("Z").append("\n");
-            } else if (returnTypeOfElement.name().equals("INT32")) {
+            } else if (returnTypeOfElement.equals(INT32)) {
                 result.append("I").append("\n");
-            } else if (returnTypeOfElement.name().equals("VOID")) {
+            } else if (returnTypeOfElement.equals(VOID)) {
                 result.append("V").append("\n");
-            } else if (returnTypeOfElement.name().equals("OBJECTREF")) {
+            } else if (returnTypeOfElement.equals(OBJECTREF)) {
                 result.append("L").append(((ClassType) method.getReturnType()).getName()).append(";\n");
             }
 
@@ -216,8 +216,10 @@ public class OllirVisitorForJasmin {
         StringBuilder result = new StringBuilder();
         Instruction rhs = assign.getRhs();
         if (rhs instanceof SingleOpInstruction && ((SingleOpInstruction) rhs).getSingleOperand().isLiteral()) {
-            Integer value = Integer.parseInt(((LiteralElement) ((SingleOpInstruction) rhs).getSingleOperand()).getLiteral());
-            jasmincodeForIntegerVariable(result, value);
+            if (!(assign.getDest() instanceof  ArrayOperand)) {
+                Integer value = Integer.parseInt(((LiteralElement) ((SingleOpInstruction) rhs).getSingleOperand()).getLiteral());
+                jasmincodeForIntegerVariable(result, value);
+            }
         } else if (rhs instanceof SingleOpInstruction) {
             ElementType type = ((SingleOpInstruction) rhs).getSingleOperand().getType().getTypeOfElement();
             String variableName = ((Operand) ((SingleOpInstruction) rhs).getSingleOperand()).getName();
@@ -463,13 +465,13 @@ public class OllirVisitorForJasmin {
             result.append("[");
             elementType = ((ArrayType) callInstruction.getReturnType()).getArrayType();
         }
-        if (callInstruction.getReturnType().getTypeOfElement().equals(VOID)){
+        if (elementType.equals(VOID)){
             result.append("V");
-        } else if (callInstruction.getReturnType().getTypeOfElement().equals(INT32)){
+        } else if (elementType.equals(INT32)){
             result.append("I");
-        } else if (callInstruction.getReturnType().getTypeOfElement().equals(BOOLEAN)){
+        } else if (elementType.equals(BOOLEAN)){
             result.append("Z");
-        } else if (callInstruction.getReturnType().getTypeOfElement().equals(CLASS)){
+        } else if (elementType.equals(CLASS)){
             result.append("L").append(((ClassType) callInstruction.getReturnType()).getName()).append(";");
         }
         result.append("\n");
