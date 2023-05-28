@@ -393,9 +393,9 @@ public class JmmVisitorForOllir extends AJmmVisitor< String , String > {
         JmmNode lengthNode = jmmNode.getJmmChild(0);
         String lengthCode = visit(lengthNode);
         JmmNode rhs = jmmNode.getJmmChild(1);
+        String rhsCode = visit(rhs);
         if(!isLiteralOrFunctionVariable(rhs))
             symbolTable.decreaseVariable();
-        String rhsCode = visit(rhs);
         String arrayToAccess = arrayName;
 
         if(Objects.equals(jmmNode.get("field"), "true")){
