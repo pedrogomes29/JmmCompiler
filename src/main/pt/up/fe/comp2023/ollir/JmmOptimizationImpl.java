@@ -116,8 +116,8 @@ public class JmmOptimizationImpl implements JmmOptimization {
             jmmVisitorForConstFolding.visit(semanticsResult.getRootNode());
             continueOptimizing = jmmVisitorForConstFolding.hasOptimized();
             JmmVisitorForConstPropagation jmmVisitorForConstPropagation = new JmmVisitorForConstPropagation(semanticsResult.getSymbolTable());
-            jmmVisitorForConstPropagation.visit(semanticsResult.getRootNode());
-            continueOptimizing = continueOptimizing || jmmVisitorForConstPropagation.hasOptimized();
+            //jmmVisitorForConstPropagation.visit(semanticsResult.getRootNode());
+            //continueOptimizing = continueOptimizing || jmmVisitorForConstPropagation.hasOptimized();
         }
         return semanticsResult;
     }
