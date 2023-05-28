@@ -646,10 +646,15 @@ public class OllirVisitorForJasmin {
             result.append("\taload_0\n");
             jasmincodeForIntegerVariable(result,value);
             result.append("\tputfield ").append(this.className).append("/").append(((Operand) putFieldInstruction.getSecondOperand()).getName());
-        } else {
+        } else if (firstOperand.getType().getTypeOfElement().equals(OBJECTREF) || firstOperand.getType().getTypeOfElement().equals(ARRAYREF)){
             result.append(legalizeInstruction("\taload",localVariables.get(((Operand)putFieldInstruction.getFirstOperand()).getName()).getVirtualReg()));
             jasmincodeForIntegerVariable(result,value);
             result.append("\tputfield ").append(((Operand) putFieldInstruction.getFirstOperand())).append("/").append(((Operand) putFieldInstruction.getSecondOperand()).getName());
+        } else {
+            result.append(legalizeInstruction("\tiload",localVariables.get(((Operand)putFieldInstruction.getFirstOperand()).getName()).getVirtualReg()));
+            jasmincodeForIntegerVariable(result,value);
+            result.append("\tputfield ").append(((Operand) putFieldInstruction.getFirstOperand())).append("/").append(((Operand) putFieldInstruction.getSecondOperand()).getName());
+
         }
         if (secondOperand.getType().getTypeOfElement().equals(INT32)) {
             result.append(" I");
@@ -668,10 +673,14 @@ public class OllirVisitorForJasmin {
         if (firstOperand.getType().getTypeOfElement().equals(THIS)){
             result.append("\taload_0\n");
             result.append("\tgetfield ").append(this.className).append("/").append(((Operand) getFieldInstruction.getSecondOperand()).getName());
-        } else {
+        } else if (firstOperand.getType().getTypeOfElement().equals(OBJECTREF) || firstOperand.getType().getTypeOfElement().equals(ARRAYREF)){
             result.append(legalizeInstruction("\taload", localVariable.get(((Operand)getFieldInstruction.getFirstOperand()).getName()).getVirtualReg()));
             result.append("\tgetfield ").append(((Operand) getFieldInstruction.getFirstOperand())).append("/").append(((Operand) getFieldInstruction.getSecondOperand()).getName());
+        } else {
+            result.append(legalizeInstruction("\tiload", localVariable.get(((Operand)getFieldInstruction.getFirstOperand()).getName()).getVirtualReg()));
+            result.append("\tgetfield ").append(((Operand) getFieldInstruction.getFirstOperand())).append("/").append(((Operand) getFieldInstruction.getSecondOperand()).getName());
         }
+
         if (secondOperand.getType().getTypeOfElement().equals(INT32)) {
             result.append(" I");
         }   else if (secondOperand.getType().getTypeOfElement().equals(BOOLEAN)){
@@ -795,7 +804,7 @@ public class OllirVisitorForJasmin {
         } else if (type.equals(ARRAYREF)){
             result.append(legalizeInstruction("\taload",varTable.get(op.getName()).getVirtualReg())).append("\n");
         } else if (type.equals(THIS)){
-            result.append("\taload0").append("\n");
+            result.append("\taload_0").append("\n");
         } else {
             result.append(legalizeInstruction("\tiload",varTable.get(op.getName()).getVirtualReg())).append("\n");
         }
