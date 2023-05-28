@@ -370,9 +370,9 @@ public class OllirVisitorForJasmin {
             isIfOperation = true;
         }
         if (isIfOperation){
-            result.append(" TRUE").append(this.conditionNumber).append("\n").append(
-                    "\ticonst_0\n \tgoto NEXT").append(this.conditionNumber).append("\n TRUE").append(
-                    this.conditionNumber).append(":\n\ticonst_1\n NEXT").append(this.conditionNumber++).append(":");
+            result.append(" LABELX").append(this.conditionNumber).append("\n").append(
+                    "\ticonst_0\n \tgoto SKIPX").append(this.conditionNumber).append("\nLABELX").append(
+                    this.conditionNumber).append(":\n\ticonst_1\nSKIPX").append(this.conditionNumber++).append(":");
         }
         result.append("\n");
 
@@ -403,9 +403,9 @@ public class OllirVisitorForJasmin {
             isIfOperation = true;
         }
         if (isIfOperation){
-            result.append(" TRUE").append(this.conditionNumber).append("\n").append(
-                    "\ticonst_0\n \tgoto NEXT").append(this.conditionNumber).append("\n TRUE").append(
-                    this.conditionNumber).append(":\n\ticonst_1\n NEXT").append(this.conditionNumber++).append(":");
+            result.append(" LABELX").append(this.conditionNumber).append("\n").append(
+                    "\ticonst_0\n \tgoto SKIPX").append(this.conditionNumber).append("\nLABELX").append(
+                    this.conditionNumber).append(":\n\ticonst_1\nSKIPX").append(this.conditionNumber++).append(":");
         }
         result.append("\n");
         return result;
