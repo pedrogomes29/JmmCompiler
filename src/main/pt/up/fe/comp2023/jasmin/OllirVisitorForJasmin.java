@@ -245,10 +245,6 @@ public class OllirVisitorForJasmin {
                     result.append("\tiinc " + localVariable.get(destOperand.getName()).getVirtualReg() + " " + ((LiteralElement) ((BinaryOpInstruction) rhs).getRightOperand()).getLiteral() + "\n");
                     return result;
                 }
-                else if (((BinaryOpInstruction) rhs).getOperation().getOpType() == SUB) {
-                    result.append("\tiinc " + localVariable.get(destOperand.getName()).getVirtualReg() + " -" + ((LiteralElement) ((BinaryOpInstruction) rhs).getRightOperand()).getLiteral() + "\n");
-                    return result;
-                }
                 else {
                     result.append(visitBinaryOpInstruction((BinaryOpInstruction) rhs, localVariable));
                 }
