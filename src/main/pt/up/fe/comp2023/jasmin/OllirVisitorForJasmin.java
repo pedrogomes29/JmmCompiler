@@ -192,7 +192,7 @@ public class OllirVisitorForJasmin{
         } else if (instruction instanceof CondBranchInstruction) {
             result.append(visitCondBranchInstruction((CondBranchInstruction) instruction, varTable));
         } else if (instruction.getInstType().equals(NOPER)){
-           getLoadInstruction(result, ((SingleOpInstruction) instruction).getSingleOperand().toElement(), varTable);
+            getLoadInstruction(result, ((SingleOpInstruction) instruction).getSingleOperand(), varTable);
         } else if (instruction.getInstType().equals(BINARYOPER)) {
             result.append(visitBinaryOpInstruction((BinaryOpInstruction) instruction,varTable));
         } else if (instruction.getInstType().equals(UNARYOPER)){
@@ -349,7 +349,7 @@ public class OllirVisitorForJasmin{
 
     public StringBuilder visitUnaryOpInstruction(UnaryOpInstruction instruction,HashMap<String, Descriptor> varTable){
         StringBuilder result = new StringBuilder();
-        getLoadInstruction(result, instruction.getOperand().toElement(),varTable);
+        getLoadInstruction(result, instruction.getOperand(),varTable);
         OperationType opType = instruction.getOperation().getOpType();
         if (opType.equals(ADD)){
             result.append("\tiadd");
