@@ -1,9 +1,22 @@
 class PropWithLoop {
-    public int foo(){
-	  int res;
-	  res = res - 1;
-	  return res;
+    public int getFirstElement(int[] x){
+        int i;
+        int result;
+        i=0;
+        while(i<x.length){
+            if(!(i<10))
+                result = 11;
+            else
+                result = 5;
+            i = i + 1;
+        }
+        return result;
 	}
 	public static void main(String[] args) {
+        int[] x;
+        PropWithLoop y;
+        x = new int[10];
+        y = new PropWithLoop();
+        y.getFirstElement(x);
 	}
 }
