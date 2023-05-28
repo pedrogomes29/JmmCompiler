@@ -338,7 +338,7 @@ public class OllirVisitorForJasmin {
                     updateLimitOfStack(1);
                     if (type == THIS) {
                         result.append("\taload_0\n");
-                    } else if (type == OBJECTREF || type == ARRAYREF) {
+                    } else if (type.equals(OBJECTREF) || type.equals(ARRAYREF)) {
                         result.append(legalizeInstruction("\taload", localVariable.get(variableName).getVirtualReg())).append("\n");
                     } else {
                         result.append(legalizeInstruction("\tiload", localVariable.get(variableName).getVirtualReg())).append("\n");
