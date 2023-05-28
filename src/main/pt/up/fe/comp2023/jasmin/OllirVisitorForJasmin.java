@@ -256,9 +256,6 @@ public class OllirVisitorForJasmin {
                 if (((BinaryOpInstruction) rhs).getOperation().getOpType() == ADD) {
                     result.append("\tiinc " + localVariable.get(destOperand.getName()).getVirtualReg() + " " + ((LiteralElement) ((BinaryOpInstruction) rhs).getLeftOperand()).getLiteral() + "\n");
                 }
-                if (((BinaryOpInstruction) rhs).getOperation().getOpType() == SUB) {
-                    result.append("\tiinc " + localVariable.get(destOperand.getName()).getVirtualReg() + " -" + ((LiteralElement) ((BinaryOpInstruction) rhs).getLeftOperand()).getLiteral() + "\n");
-                }
                 return result;
             }
             else {
