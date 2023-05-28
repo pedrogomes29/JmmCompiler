@@ -288,11 +288,11 @@ public class OllirVisitorForJasmin{
                     }
                 }
                 result.append("\tiastore\n");
+            } else if (rhs.getInstType().equals(NOPER) || rhs.getInstType().equals(UNARYOPER)) {
+                result.append(getInstruction(rhs, localVariable));
             }
         }
-        if (rhs.getInstType().equals(NOPER) || rhs.getInstType().equals(UNARYOPER)){
-            result.append(getInstruction(rhs, localVariable));
-        }
+
 
         return result;
     }
