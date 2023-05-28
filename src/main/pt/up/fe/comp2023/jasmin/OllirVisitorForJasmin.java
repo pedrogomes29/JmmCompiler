@@ -170,7 +170,7 @@ public class OllirVisitorForJasmin {
             }
             if (method.getReturnType().getTypeOfElement().equals(VOID)) {
                 result.append("\treturn\n");
-            } else if (method.getReturnType().getTypeOfElement().equals(OBJECTREF)) {
+            } else if (method.getReturnType().getTypeOfElement().equals(OBJECTREF) || method.getReturnType().getTypeOfElement().equals(ARRAYREF)) {
                 result.append("\tareturn\n");
             } else {
                 result.append("\tireturn\n");
@@ -470,7 +470,7 @@ public class OllirVisitorForJasmin {
             Operand returnInstructionOperand = ((Operand)returnIntruction.getOperand());
             String localVariableName = returnInstructionOperand.getName();
             int localVariableIdx;
-            if (returnInstructionOperand.getType().getTypeOfElement().equals(OBJECTREF)){
+            if (returnInstructionOperand.getType().getTypeOfElement().equals(OBJECTREF) || returnInstructionOperand.getType().getTypeOfElement().equals(ARRAYREF)){
                 result.append(legalizeInstruction("\taload",localVariable.get(returnInstructionOperand.getName()).getVirtualReg())).append("\n");
             } else if (returnInstructionOperand.getType().getTypeOfElement().equals(THIS)){
                 result.append("\taload_0\n");
