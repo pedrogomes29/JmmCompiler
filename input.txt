@@ -4,23 +4,22 @@ class PropWithLoop {
     public int getFirstElement(int[] x){
         int i;
         int result;
-        i=0;
-        while(i<x.length){
-            if(!(i<10))
-                result = 11;
-            else
-                result = 5;
-            i = i + 1;
-        }
+        int[] arr;
+
+        arr = new int[10];
+        i = 10;
+        arr[1] = i;
+
+        result = arr[1];
+
+
         return result;
     }
     public static void main(String[] args) {
         int[] x;
-        int z;
         PropWithLoop y;
         x = new int[10];
         y = new PropWithLoop();
-        z = y.getFirstElement(x);
-        io.println(z);
+        io.println(y.getFirstElement(x));
     }
 }

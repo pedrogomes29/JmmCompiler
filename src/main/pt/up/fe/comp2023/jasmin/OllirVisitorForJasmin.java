@@ -792,7 +792,7 @@ public class OllirVisitorForJasmin {
             result.append(legalizeInstruction("\taload",varTable.get(op.getName()).getVirtualReg())).append("\n");
         } else if(element instanceof ArrayOperand) {
             result.append(legalizeInstruction("\taload",varTable.get(op.getName()).getVirtualReg())).append("\n");
-        } else if (element.getType().getTypeOfElement().equals(ARRAYREF)){
+        } else if (type.equals(ARRAYREF)){
             result.append(legalizeInstruction("\taload",varTable.get(op.getName()).getVirtualReg())).append("\n");
         } else if (type.equals(THIS)){
             result.append("\taload0").append("\n");
