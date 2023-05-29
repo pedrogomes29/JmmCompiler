@@ -13,7 +13,7 @@ Each member of the group contributed approximately 1/3 to the project
 
 ## Self-assessment
 
-20
+19.8
 
 ## Extra elements
 
